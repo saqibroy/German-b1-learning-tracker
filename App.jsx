@@ -11,257 +11,692 @@ const flashcardStyles = {
 
 const DayDetailPlaceholder = 'Not available, please contact the administrator.';
 
+// Component to render formatted text with markdown-like syntax
+const FormattedText = ({ text, className = '' }) => {
+  if (!text) return null;
+
+  // Helper function for inline formatting (defined first to avoid hoisting issues)
+  const renderInlineFormatting = (text) => {
+    const parts = [];
+    let currentIndex = 0;
+    const boldRegex = /\*\*(.+?)\*\*/g;
+    let match;
+
+    while ((match = boldRegex.exec(text)) !== null) {
+      // Add text before the bold part
+      if (match.index > currentIndex) {
+        parts.push(text.substring(currentIndex, match.index));
+      }
+      // Add the bold part
+      parts.push(
+        <strong key={match.index} className="font-bold text-gray-900 dark:text-gray-100">
+          {match[1]}
+        </strong>
+      );
+      currentIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text
+    if (currentIndex < text.length) {
+      parts.push(text.substring(currentIndex));
+    }
+
+    return parts.length > 0 ? parts : text;
+  };
+
+  // Split text by lines to preserve formatting
+  const lines = text.split('\n');
+  const processedElements = [];
+  let tableRows = [];
+  let listItems = [];
+  let currentListType = null;
+  
+  const flushTable = () => {
+    if (tableRows.length > 0) {
+      processedElements.push(
+        <div key={`table-${processedElements.length}`} className="my-4 overflow-x-auto">
+          <div className="inline-block min-w-full">
+            <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+              {tableRows.map((row, idx) => row)}
+            </div>
+          </div>
+        </div>
+      );
+      tableRows = [];
+    }
+  };
+
+  const flushList = () => {
+    if (listItems.length > 0) {
+      const ListTag = currentListType === 'numbered' ? 'ol' : 'ul';
+      processedElements.push(
+        <ListTag key={`list-${processedElements.length}`} className={`my-3 space-y-1 ${currentListType === 'numbered' ? 'list-decimal' : 'list-disc'} list-inside ml-4`}>
+          {listItems.map((item, idx) => item)}
+        </ListTag>
+      );
+      listItems = [];
+      currentListType = null;
+    }
+  };
+  
+  lines.forEach((line, index) => {
+    // Check for headers (lines with ** on both sides, standalone)
+    if (line.trim().startsWith('**') && line.trim().endsWith('**') && line.trim().length > 4) {
+      flushTable();
+      flushList();
+      const content = line.trim().slice(2, -2);
+      processedElements.push(
+        <h4 key={`header-${index}`} className="font-bold text-lg mt-6 mb-3 text-gray-900 dark:text-gray-100 first:mt-0">
+          {content}
+        </h4>
+      );
+      return;
+    }
+
+    // Check for table rows (lines with |)
+    if (line.includes('|') && line.trim()) {
+      flushList();
+      const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+      const isHeaderRow = line.includes('---|') || cells.every(cell => cell === '---' || cell.includes('---'));
+      
+      if (isHeaderRow) {
+        return; // Skip separator rows
+      }
+
+      // Check if this is the first row (likely header)
+      const isFirstRow = tableRows.length === 0;
+      
+      tableRows.push(
+        <div key={`row-${index}`} className={`flex border-b border-gray-300 dark:border-gray-600 last:border-b-0 ${isFirstRow ? 'bg-gray-100 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'}`}>
+          {cells.map((cell, cellIndex) => (
+            <div
+              key={cellIndex}
+              className={`flex-1 px-4 py-3 text-sm ${
+                isFirstRow
+                  ? 'font-bold text-gray-900 dark:text-gray-100'
+                  : 'text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              {renderInlineFormatting(cell)}
+            </div>
+          ))}
+        </div>
+      );
+      return;
+    }
+
+    // If we had table rows but now we don't, flush the table
+    if (tableRows.length > 0 && !line.includes('|')) {
+      flushTable();
+    }
+
+    // Check for bullet points
+    if (line.trim().startsWith('- ')) {
+      if (currentListType !== 'bullet') {
+        flushList();
+        currentListType = 'bullet';
+      }
+      listItems.push(
+        <li key={`li-${index}`} className="text-gray-800 dark:text-gray-200 leading-relaxed">
+          {renderInlineFormatting(line.replace(/^-\s*/, ''))}
+        </li>
+      );
+      return;
+    }
+
+    // Check for numbered lists
+    if (line.trim().match(/^\d+\./)) {
+      if (currentListType !== 'numbered') {
+        flushList();
+        currentListType = 'numbered';
+      }
+      listItems.push(
+        <li key={`li-${index}`} className="text-gray-800 dark:text-gray-200 leading-relaxed">
+          {renderInlineFormatting(line.replace(/^\d+\.\s*/, ''))}
+        </li>
+      );
+      return;
+    }
+
+    // If we had list items but now we don't, flush the list
+    if (listItems.length > 0 && !line.trim().startsWith('- ') && !line.trim().match(/^\d+\./)) {
+      flushList();
+    }
+
+    // Check for section labels (e.g., "Teil 1:", "Example:")
+    if (line.trim().endsWith(':') && line.trim().split(' ').length <= 5 && !line.trim().startsWith('http')) {
+      flushTable();
+      flushList();
+      processedElements.push(
+        <p key={`label-${index}`} className="font-semibold text-blue-700 dark:text-blue-400 mt-4 mb-2 first:mt-0">
+          {renderInlineFormatting(line)}
+        </p>
+      );
+      return;
+    }
+
+    // Check for special markers (✓, ✅, etc.)
+    if (line.trim().startsWith('✓') || line.trim().startsWith('✅')) {
+      flushTable();
+      flushList();
+      processedElements.push(
+        <p key={`check-${index}`} className="my-2 text-green-700 dark:text-green-400 leading-relaxed flex items-start gap-2">
+          <span className="text-lg flex-shrink-0">{line.trim()[0]}</span>
+          <span>{renderInlineFormatting(line.trim().slice(1).trim())}</span>
+        </p>
+      );
+      return;
+    }
+
+    // Regular paragraph
+    if (line.trim()) {
+      flushTable();
+      flushList();
+      processedElements.push(
+        <p key={`p-${index}`} className="my-2 text-gray-800 dark:text-gray-200 leading-relaxed">
+          {renderInlineFormatting(line)}
+        </p>
+      );
+      return;
+    }
+
+    // Empty line - add spacing
+    if (!line.trim() && processedElements.length > 0) {
+      flushTable();
+      flushList();
+      processedElements.push(<div key={`space-${index}`} className="h-2" />);
+    }
+  });
+
+  // Flush any remaining table or list
+  flushTable();
+  flushList();
+
+  return (
+    <div className={`formatted-text ${className}`}>
+      {processedElements}
+    </div>
+  );
+};
+
 const App = () => {
   // --- INITIAL DATA STRUCTURE ---
-  const initialDataStructure = {
-    startDate: null, // Tracks the start date of the plan (YYYY-MM-DD string)
-    weeks: [
-      {
-        week: 1,
-        goal: "Cases & Basic Sentence Structure",
-        days: [
-          {
-            day: 1,
-            task: "Mastering Nominative & Accusative Cases",
-            focus: "grammar",
-            level: "B1",
-            lessonContent: {
-              title: "The Case Detectives: Who is the hero?",
-              definition: "Hallo! Today we start with the two most essential German cases: **Nominative (Nominativ)** and **Accusative (Akkusativ)**. Think of it like this: the **Nominative** is the *hero* of the sentence—the one doing the action (the **Subject**). The **Accusative** is the *receiver* of the action (the **Direct Object**). The great news? In B1, the main change you worry about is only for the masculine article!",
-              example: "**Your Article Cheat Sheet (Der, Die, Das):**\n\n| Article | Nominative (Hero) | Accusative (Receiver) |\n|---|---|---|\n| Masculine | **der** | **den** |\n| Feminine | **die** | **die** |\n| Neuter | **das** | **das** |\n| Plural | **die** | **die** |\n\n**Example Sentence:**\n**Der** Hund (Nom.) sieht **den** Mann (Akk.).\n*(The dog sees the man.)*\n*The dog* is the hero (Nom.) doing the seeing. *The man* is the receiver (Akk.).",
-              tips: "To solidify your understanding, always ask: 'Who/What is doing the action?' (Nom.) and 'Who/What is receiving the action?' (Akk.). This helps you choose the correct article automatically. Don't worry too much about the other cases yet!"
-            },
-            subtasks: [
-                { description: "Review and memorize the definite articles for Nominative and Accusative (especially the **der/den** change).", completed: false },
-                { description: "Identify the subject (Nominative) in 10 example sentences (focus on 'der' vs 'den').", completed: false },
-                { description: "Write 5 simple sentences using an Accusative object, like 'Ich sehe den Baum'.", completed: false },
-                { description: "Practice reading the articles out loud: 'Der, den, die, die, das, das, die, die'." , completed: false}
-            ],
-            completed: false, // Calculated status
-            resources: [
-              { name: "Goethe Grammar: Cases", url: "https://www.goethe.de" },
-              { name: "Online Case Trainer", url: "https://deutschlern.net" }
-            ],
-            notes: ""
+  // COMPREHENSIVE GOETHE-ZERTIFIKAT B1 STUDY PLAN
+// Based on official Goethe-Institut exam format and requirements
+// Target: Pass all 4 modules (Reading, Listening, Writing, Speaking)
+// Passing score: 60% in EACH module (18/30 for Reading/Listening, 60/100 for Writing/Speaking)
+
+const goetheB1CompleteData = {
+  examOverview: {
+    totalDuration: "~180 minutes",
+    modules: [
+      { name: "Lesen (Reading)", duration: "65 minutes", points: 30, passing: 18 },
+      { name: "Hören (Listening)", duration: "40 minutes", points: 30, passing: 18 },
+      { name: "Schreiben (Writing)", duration: "60 minutes", points: 100, passing: 60 },
+      { name: "Sprechen (Speaking)", duration: "15 minutes", points: 100, passing: 60 }
+    ],
+    vocabularyTarget: "~2,400 words (Goethe-Institut official list)",
+    studyHoursRecommended: "350-650 hours total for B1 level"
+  },
+
+  startDate: null, // User sets this when starting
+
+  // 12-WEEK INTENSIVE PLAN (January mid exam target)
+  weeks: [
+    // ============== WEEK 1: FOUNDATION & EXAM FORMAT ==============
+    {
+      week: 1,
+      goal: "Understanding Exam Format & Core Grammar (Cases System)",
+      targetVocabulary: 200,
+      estimatedHours: "15-20 hours",
+      days: [
+        {
+          day: 1,
+          task: "Exam Format Deep Dive + Nominative & Accusative Cases",
+          focus: "grammar",
+          level: "B1",
+          lessonContent: {
+            title: "Welcome to Your B1 Journey: The Exam Blueprint",
+            definition: "Before diving into content, you MUST understand what you're preparing for. The Goethe B1 exam has 4 independent modules. You need **60% in EACH** to pass (not an average!). Today, we master the two most common cases: **Nominative (subject)** and **Accusative (direct object)**. Think: Nominative = WHO does it? Accusative = WHAT receives the action?",
+            example: "**EXAM FORMAT BREAKDOWN:**\n\n**LESEN (Reading) - 65 minutes:**\n- Teil 1: Blog/Email (6 True/False questions)\n- Teil 2: 2 Press reports (6 MCQs total)\n- Teil 3: Match 7 statements to 10 ads\n- Teil 4: 7 opinions on a topic\n- Teil 5: Rules/regulations table (4 MCQs)\n\n**CASE SYSTEM - Your Article Decoder:**\n\n| Case | Masc | Fem | Neut | Plural |\n|------|------|-----|------|--------|\n| NOM | **der** | die | das | die |\n| AKK | **den** | die | das | die |\n\n**Key Insight:** Only masculine changes (der→den)!\n\n**Example:** **Der** Lehrer (NOM) sieht **den** Schüler (AKK).\n*The teacher sees the student.*",
+            tips: "**EXAM STRATEGY:** Download the official sample exam from Goethe-Institut website TODAY. Print it. This is your roadmap. For cases, create a physical reference card with the article table. Keep it visible during study sessions. The 'der→den' change is tested constantly in writing!"
           },
-          {
-            day: 2,
-            task: "Core Daily Life Vocabulary (50 words)",
-            focus: "vocabulary",
-            level: "B1",
-            lessonContent: {
-              title: "The Daily 50: Nouns, Verbs, and Articles",
-              definition: "Your goal today is to build up the words you need for talking about your daily life: family, house, work, and hobbies. We call this **active recall**—it's not enough to just recognize the words; you must be able to use them in a sentence!",
-              example: "**Target Vocabulary: Always learn with the Article!**\n\n| German (Singular) | Plural | English |\n|---|---|---|\n| **der** Tisch | die Tische | the table |\n| **das** Buch | die Bücher | the book |\n| **die** Küche | die Küchen | the kitchen |\n| **der** Computer | die Computer | the computer |\n| **die** Lampe | die Lampen | the lamp |\n\n**Important Verbs:**\n1. arbeiten (to work)\n2. kochen (to cook)\n3. lesen (to read)\n4. schlafen (to sleep)\n5. gehen (to go)\n\n**Example:** Ich **lese** (verb) **das** Buch (Akk.).",
-              tips: "Listen closely to native speakers say these words! Also, remember the **Golden Rule of German Nouns**: *Never* learn a noun without its definite article (der, die, das) and its plural form. This simple habit saves you massive headaches later!"
-            },
-            subtasks: [
-                { description: "Learn the 10 target nouns (with articles and plural forms).", completed: false },
-                { description: "Learn the 5 target verbs and their meanings.", completed: false },
-                { description: "Create 10 short sentences using the new vocabulary (try to include both Nominative and Accusative!).", completed: false },
-                { description: "Practice spelling five of the new words in German out loud.", completed: false }
-            ],
-            completed: false,
-            resources: [
-              { name: "Anki Web Flashcards", url: "https://www.ankiweb.net" },
-              { name: "Quizlet: B1 Daily Vocab", url: "https://quizlet.com" }
-            ],
-            notes: ""
+          subtasks: [
+            { description: "Download and review the official Goethe B1 sample exam (all 4 modules) from goethe.de.", completed: false },
+            { description: "Create a time-tracking sheet: Note reading (65 min), listening (40 min), writing (60 min), speaking (15 min) limits.", completed: false },
+            { description: "Memorize the 4-case article table (NOM/AKK for now) - drill with 20 fill-in-the-blank sentences.", completed: false },
+            { description: "Identify subjects (NOM) and direct objects (AKK) in 15 sample sentences from news articles.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Official Goethe B1 Sample Exam", url: "https://www.goethe.de/en/spr/prf/ueb/pb1.html" },
+            { name: "German Cases Explained", url: "https://www.germanveryeasy.com/cases" }
+          ],
+          notes: ""
+        },
+        {
+          day: 2,
+          task: "Dative Case + Present Tense Verb Conjugation",
+          focus: "grammar",
+          level: "B1",
+          lessonContent: {
+            title: "Dative Case: The Indirect Object Mystery",
+            definition: "The **Dative case** answers 'TO/FOR WHOM?' It's the indirect object - the person receiving something indirectly. Common verbs triggering dative: **geben** (give), **helfen** (help), **gehören** (belong to), **gefallen** (please). Master present tense conjugations for regular AND irregular verbs - exam speaking relies heavily on accurate present tense!",
+            example: "**DATIVE ARTICLES:**\n\n| Case | Masc | Fem | Neut | Plural |\n|------|------|-----|------|--------|\n| DAT | **dem** | **der** | **dem** | **den** + n |\n\n**Example:** Ich gebe **dem** Freund (DAT) **das** Buch (AKK).\n*I give the book to the friend.*\n\n**PRESENT TENSE - Regular (kaufen):**\nich kaufe, du kaufst, er/sie/es kauft, wir kaufen, ihr kauft, sie/Sie kaufen\n\n**Irregular VIPs (memorize!):**\n- **sein:** bin, bist, ist, sind, seid, sind\n- **haben:** habe, hast, hat, haben, habt, haben\n- **werden:** werde, wirst, wird, werden, werdet, werden",
+            tips: "**Mnemonic:** Dative sounds like 'to-GIVE' - think of giving TO someone. For irregular verbs, focus first on 'du' and 'er/sie/es' forms - these show stem changes (fahren→du fährst, er fährt). Make flashcards for the 20 most common irregular verbs."
           },
-          {
-            day: 3,
-            task: "Active Listening: Identifying Key Information",
-            focus: "listening",
-            level: "B1",
-            lessonContent: {
-              title: "Listening Like a Native: Focusing on the Core Message",
-              definition: "We are moving from passive hearing to **active listening**. This means you stop focusing on *every* word, and instead focus on grabbing the specific key facts: **Who**, **What**, **When**, and **Where**. This builds huge confidence because you realize you don't need 100% comprehension to understand the message.",
-              example: "**What to Listen For:**\n1. **Nominative/Subject:** Listen for who is starting the conversation or doing the main action.\n2. **Verbs:** The main action word (e.g., 'kaufen', 'fahren', 'sagen').\n3. **New Vocab:** Actively search for the vocabulary you learned on Day 2.\n\nE.g., if you hear 'Der Mann kauft den Kaffee,' you must understand *who* is buying (*Der Mann*) and *what* is being bought (*den Kaffee*).",
-              tips: "Listen twice: first time with your eyes closed for the general atmosphere and main idea. Second time, follow the transcript and specifically underline the nouns and verbs you learned. Try to mentally identify the case (Nom. or Akk.) of each underlined noun."
-            },
-            subtasks: [
-                { description: "Listen to a 10-minute B1 podcast. Summarize the main idea in 3 English sentences.", completed: false },
-                { description: "Transcribe 5 sentences verbatim from the podcast.", completed: false },
-                { description: "Identify 5 nouns from the listening task and determine their article and case (Nom./Akk.).", completed: false }
-            ],
-            completed: false,
-            resources: [
-              { name: "DW Learn German Podcasts", url: "https://www.dw.com" },
-              { name: "Slow German for Beginners", url: "https://www.slowgerman.com" }
-            ],
-            notes: ""
+          subtasks: [
+            { description: "Learn dative articles for all genders - drill with 'Ich gebe...' sentences (give to 10 different people/things).", completed: false },
+            { description: "Memorize the 'DAT verbs': geben, helfen, gefallen, gehören, antworten, danken, gratulieren (with examples).", completed: false },
+            { description: "Conjugate 5 regular verbs (machen, lernen, spielen, arbeiten, wohnen) in present tense - all 6 persons.", completed: false },
+            { description: "Memorize irregular present tense for: sein, haben, werden, können, müssen, fahren, essen, gehen.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Dative Case Practice", url: "https://www.germanveryeasy.com/dative-case" },
+            { name: "Verbformen.com - Verb Conjugator", url: "https://www.verbformen.com" }
+          ],
+          notes: ""
+        },
+        {
+          day: 3,
+          task: "Reading Module Strategy + Text Analysis Practice",
+          focus: "reading",
+          level: "B1",
+          lessonContent: {
+            title: "Lesen Teil 1-5: Your Strategic Reading Roadmap",
+            definition: "The Reading module is 65 minutes for 30 points. You need 18+ points to pass. **KEY STRATEGY:** Don't read everything word-by-word! Use **scanning** (finding specific info) and **skimming** (getting main idea). Manage your time: ~10-13 minutes per Teil. Always read questions BEFORE texts!",
+            example: "**TIME ALLOCATION STRATEGY:**\n- Teil 1 (Blog): 10 min - Read questions → Scan for keywords\n- Teil 2 (Press): 15 min - Skim first, then detail\n- Teil 3 (Ads): 12 min - Match quickly, process of elimination\n- Teil 4 (Opinions): 13 min - Identify FOR/AGAINST positions\n- Teil 5 (Rules): 10 min - Table scanning\n- Transfer answers: 5 min\n\n**QUESTION TYPES:**\n✓ Richtig/Falsch (True/False) - watch for 'nicht erwähnt' traps\n✓ MCQ (a/b/c) - eliminate obvious wrong answers first\n✓ Matching - use process of elimination",
+            tips: "**CRITICAL:** In Teil 1 (True/False), if info isn't in text, it's FALSE - even if logically possible! For Teil 3 (matching ads), make quick notes: which ad has 'price', 'location', 'contact'? Cross out used options. In Teil 4, underline opinion indicators: 'Ich finde...', 'Meiner Meinung nach...', 'dagegen' (against)."
           },
-          {
-            day: 4,
-            task: "Speaking Practice: Self-Introduction Fluency",
-            focus: "speaking",
-            level: "B1",
-            lessonContent: {
-              title: "My German Story: Speaking with Flow",
-              definition: "Today's task is all about flow! Your goal is to deliver a smooth, **2-minute self-introduction** covering name, origin, job, family, and hobbies. Forget about absolute grammatical perfection for 2 minutes—focus on keeping the conversation moving without long, awkward pauses. This is how you build fluency and confidence.",
-              example: "**Introduction Structure (Try to use Accusative for family/pets!):**\n1. **Name/Age:** Ich bin Max und ich bin 25 Jahre alt.\n2. **Origin/Living:** Ich komme aus Spanien, aber ich lebe in Berlin.\n3. **Job/Study:** Ich arbeite als Lehrer/Ich studiere Informatik.\n4. **Family/Pets:** Ich habe einen Bruder (Akk.) und eine Katze (Akk.).\n5. **Hobbies:** Ich lese gern Bücher (Akk.) und koche oft.\n\n**Connecting Words:** Use *und* (and), *aber* (but), and *weil* (because) to link your ideas.",
-              tips: "Recording yourself is your best friend here! Listen back and count your pauses. Also, prepare natural filler phrases like 'Ähm...' or 'Also,...' to sound more natural when you are thinking. This is what natives do!"
-            },
-            subtasks: [
-                { description: "Write and memorize a 2-minute script covering the 5 topics above.", completed: false },
-                { description: "Practice delivery 3 times, focusing on speed and flow (don't stop if you make a mistake!).", completed: false },
-                { description: "Record your final 2-minute introduction and listen back only for your most common mistakes (like article/case errors).", completed: false }
-            ],
-            completed: false,
-            resources: [
-              { name: "Tandem Language Exchange", url: "https://www.tandem.net" },
-              { name: "Preply German Tutors", url: "https://preply.com" }
-            ],
-            notes: ""
+          subtasks: [
+            { description: "Take Teil 1 from official sample exam - practice reading questions first, then scanning text. Time: 10 minutes.", completed: false },
+            { description: "Analyze your mistakes: Which wrong answers were 'not mentioned' vs 'contradicted by text'?", completed: false },
+            { description: "Practice Teil 3 (matching): Take one practice set, highlight keywords in each person's needs and in ads.", completed: false },
+            { description: "Learn these reading keywords: jedoch (however), außerdem (moreover), deswegen (therefore), trotzdem (nevertheless).", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Goethe B1 Reading Practice", url: "https://www.goethe.de/en/spr/prf/ueb/pb1.html" },
+            { name: "DW Reading Exercises B1", url: "https://learngerman.dw.com/en/level-b1" }
+          ],
+          notes: ""
+        },
+        {
+          day: 4,
+          task: "Core Vocabulary: Personal Life + Family (150 words)",
+          focus: "vocabulary",
+          level: "B1",
+          lessonContent: {
+            title: "Thematic Vocabulary Block 1: Your Personal World",
+            definition: "B1 requires ~2,400 words total. We'll learn thematically - it's how your brain naturally stores language. Today's theme: **Personal Information, Family, Relationships**. ALWAYS learn nouns with article + plural! This saves you from guessing during the exam.",
+            example: "**FAMILY & RELATIONSHIPS (Must-Know 50):**\n\n**Core Family:**\n- der Bruder, die Brüder (brother/s)\n- die Schwester, die Schwestern (sister/s)\n- der Vater, die Väter (father/s)\n- die Mutter, die Mütter (mother/s)\n- die Eltern (pl.) (parents)\n- das Kind, die Kinder (child/ren)\n- die Tante, -n (aunt)\n- der Onkel, - (uncle)\n- der Cousin/Vetter, -s/-n (male cousin)\n- die Cousine, -n (female cousin)\n\n**Relationships:**\n- der Freund/die Freundin (boyfriend/girlfriend)\n- der Partner/die Partnerin (partner)\n- verheiratet (married)\n- geschieden (divorced)\n- ledig (single)\n- verlobt (engaged)\n\n**Key Verbs:**\n- kennenlernen (to meet/get to know)\n- sich verlieben (to fall in love)\n- heiraten (to marry)\n- sich trennen (to separate)",
+            tips: "**VOCABULARY HACK:** Use the 'Goldlist Method' - write words in notebook, wait 2 weeks, rewrite only the ones you forgot. OR use Anki app with spaced repetition. For B1 exam, focus on: 1) Word + article 2) Plural form 3) One example sentence. Don't waste time learning rarely-used meanings!"
           },
-          {
-            day: 5,
-            task: "Writing: Consistent Tense Usage",
-            focus: "writing",
-            level: "B1",
-            lessonContent: {
-              title: "My Week in German: The Perfect Tense",
-              definition: "Today, you'll write a short, 150-word journal entry about your **past week**. The key goal is **tense consistency**—ensure all past actions are correctly placed in the **Perfekt** tense (e.g., 'Ich habe gearbeitet'). *Perfekt* is the most common past tense used in spoken German, so it's vital to master it early!",
-              example: "**Perfekt Tense Structure (The two main 'helpers'):**\n\n1. **Using HABEN (Most Verbs):** Subject + **haben** (conjugated) + Object + **Past Participle** (at the end)\n*Example:* Ich **habe** gestern einen Film **gesehen**.\n\n2. **Using SEIN (Movement/Change of State):** Subject + **sein** (conjugated) + Object + **Past Participle** (at the end)\n*Example:* Ich **bin** nach Hause **gegangen**.\n\n**Key Perfekt Forms:**\n* Gesehen (to see), Gegessen (to eat), Gekauft (to buy), Gekocht (to cook)",
-              tips: "Start by writing a few simple sentences, identifying which ones need *haben* (most verbs) and which need *sein* (verbs of movement like *gehen* or *fahren*). Always put the past participle (`gesehen`, `gegangen`) at the **very end** of the sentence. "
-            },
-            subtasks: [
-                { description: "Brainstorm 4 events from the past week and list the German vocabulary needed.", completed: false },
-                { description: "Draft the 150-word entry, double-checking present tense endings and Perfekt forms (haben/sein).", completed: false },
-                { description: "Review the draft and correct any Nominative/Accusative errors on articles and pronouns.", completed: false }
-            ],
-            completed: false,
-            resources: [
-              { name: "Journaly German Writing", url: "https://www.journaly.com" },
-              { name: "Lang-8 Language Exchange", url: "https://lang-8.com" }
-            ],
-            notes: ""
-          }
-        ]
-      },
-      {
-        week: 2,
-        goal: "Present Tense & Restaurant Vocabulary",
-        days: [
-          {
-            day: 1,
-            task: "Present Tense Conjugation (Regular & Irregular)",
-            focus: "grammar",
-            level: "B1",
-            lessonContent: {
-              title: "The Present is Now! Regular vs. Irregular Verbs",
-              definition: "Welcome back! Today we conquer the **Present Tense (Präsens)**. This is how you tell people what you do, what you are doing, or what is generally true. Most verbs are **regular** (e.g., *kaufen*, *machen*) and follow a perfect, reliable pattern. The main trick is memorizing the 'VIP verbs'—**irregular verbs** like *sein*, *haben*, and *werden*—because their stems change!",
-              example: "**Regular Verb Endings (KAUFEN - to buy):**\n\n| Person | Ending | Example |\n|---|---|---|\n| Ich | **-e** | ich kauf**e** |\n| Du | **-st** | du kauf**st** |\n| Er/Sie/Es | **-t** | er kauf**t** |\n| Wir | **-en** | wir kauf**en** |\n| Ihr | **-t** | ihr kauf**t** |\n| Sie/sie | **-en** | sie kauf**en** |\n\n**Irregular VIPs (must memorize!):**\n*Sein* (to be): ich **bin**, du **bist**, er **ist**...\n*Haben* (to have): ich **habe**, du **hast**, er **hat**...",
-              tips: "Create flashcards *specifically* for the **du** and **er/sie/es** forms of irregular verbs. Why? Because that's where the stem usually changes! (e.g., *fahren* -> *du fährst*). Once you master those two forms, the rest is easy."
-            },
-            subtasks: [
-                { description: "Drill 5 regular verbs (e.g., machen, spielen) through all 6 persons.", completed: false },
-                { description: "Memorize the full conjugation of the VIP verbs: *sein* and *haben*.", completed: false },
-                { description: "Write 10 sentences using different subjects and verbs in the present tense, making sure your conjugation matches the subject.", completed: false }
-            ],
-            completed: false,
-            resources: [
-              { name: "Verb Conjugator", url: "https://www.verbformen.com" },
-              { name: "DeutschLern Verbs", url: "https://deutschlern.net" }
-            ],
-            notes: ""
+          subtasks: [
+            { description: "Create Anki flashcards or notebook page for 50 family/relationship words (article + plural).", completed: false },
+            { description: "Write 10 sentences describing your family using new vocabulary + dative case (e.g., 'Ich helfe meiner Mutter').", completed: false },
+            { description: "Learn 20 adjectives to describe people: nett, freundlich, hilfsbereit, streng, geduldig, sympathisch, etc.", completed: false },
+            { description: "Practice speaking: 2-minute monologue about your family (record yourself!).", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Anki Web", url: "https://ankiweb.net" },
+            { name: "Goethe B1 Official Wordlist (2,400 words)", url: "https://www.goethe.de" },
+            { name: "Quizlet B1 Vocabulary", url: "https://quizlet.com/subject/goethe-b1" }
+          ],
+          notes: ""
+        },
+        {
+          day: 5,
+          task: "Listening Module Strategy + Teil 1 Practice",
+          focus: "listening",
+          level: "B1",
+          lessonContent: {
+            title: "Hören: Training Your Ears for B1 Speed",
+            definition: "Listening is 40 minutes, 30 points total. Need 18+ to pass. **CRUCIAL:** Audio plays ONCE (except Teil 1 & 4 which play twice). You get time to read questions before each Teil. Focus on **main ideas and specific facts**, not every single word. Common trap: trying to understand 100% and missing the answer!",
+            example: "**LISTENING MODULE BREAKDOWN:**\n\n**Teil 1 (15 min): 5 short monologues**\n- Each with 2 questions: 1 R/F, 1 MCQ\n- Plays TWICE\n- Contexts: Phone messages, announcements, short talks\n- Points: 10\n\n**Teil 2 (10 min): 1 monologue (lecture/tour guide)**\n- 5 MCQs\n- Plays ONCE\n- Points: 5\n\n**Teil 3 (5 min): 1 conversation**\n- 7 R/F questions\n- Plays ONCE\n- Points: 7\n\n**Teil 4 (10 min): Radio discussion (3 people)**\n- 8 MCQs - identify WHO said WHAT\n- Plays TWICE\n- Points: 8\n\n**SURVIVAL STRATEGY:**\n1. Read questions during prep time\n2. Predict what you might hear\n3. Listen for keywords\n4. Don't panic if you miss something - keep going!",
+            tips: "**GOLDEN RULE:** When reading questions, underline question words (Wer? Was? Wann? Wo? Warum?). In Teil 4 (discussion), note who's the moderator vs guests - moderator's questions don't count as their opinion! Learn these listening signals: 'erstens' (firstly), 'außerdem' (besides), 'im Gegenteil' (on the contrary)."
           },
-          {
-            day: 2,
-            task: "Restaurant Vocabulary & Phrases",
-            focus: "vocabulary",
-            level: "B1",
-            lessonContent: {
-              title: "Im Restaurant: Ordering and Paying Like a Local",
-              definition: "German dining is formal, so we need polite, full phrases! Today, we are focusing on the words you need to successfully order food, ask for things, and pay the bill. The key difference from English is using the polite conditional forms (*hätte*, *könnte*) to sound respectful.",
-              example: "**Target Phrases & Words for Politeness:**\n\n| English | German (Polite) |\n|---|---|\n| I would like... | **Ich hätte gern...** (Literally: I would have gladly...) |\n| Could you...? | **Könnten Sie...?** (Literally: Could you?) |\n| The bill, please. | **Die Rechnung, bitte.** |\n| We pay separately. | **Wir zahlen getrennt.** |\n| We pay together. | **Wir zahlen zusammen.** |\n\n**Key Nouns & Verbs:**\n1. Die Speisekarte (the menu) - *Feminine*\n2. Das Gericht (the dish) - *Neuter*\n3. Der Kellner (the waiter) - *Masculine*\n4. Bestellen (to order)\n5. Lecker (tasty/delicious)",
-              tips: "Practice full phrases, not just single words. Role-play ordering aloud in front of a mirror, using 'Ich hätte gern' for everything you ask for. Remember to use the Accusative case for the food you order: 'Ich hätte gern **den** Salat (Akk.)' or 'Ich hätte gern **das** Wasser (Akk.).'"
-            },
-            subtasks: [
-                { description: "Learn the 10 target phrases/words listed, focusing on 'Ich hätte gern' and 'Könnten Sie'.", completed: false },
-                { description: "Practice ordering a drink, an appetizer, and a main course using correct Accusative articles.", completed: false },
-                { description: "Practice the 3 different ways to ask for/handle the bill (Rechnung, zahlen, getrennt/zusammen).", completed: false }
-            ],
-            completed: false,
-            resources: [
-              { name: "Quizlet: Restaurant Dialogue", url: "https://quizlet.com" },
-              { name: "Anki Flashcards", url: "https://www.ankiweb.net" }
-            ],
-            notes: ""
+          subtasks: [
+            { description: "Download official Goethe B1 listening audio. Do Teil 1 only - focus on understanding main idea, not every word.", completed: false },
+            { description: "Listen to 'Slow German' podcast (15 min) - write down main topic + 3 details.", completed: false },
+            { description: "Practice: Dictation of 5 simple sentences (play 3x, write exactly what you hear).", completed: false },
+            { description: "Learn listening vocabulary: die Durchsage (announcement), die Nachricht (message), der Anruf (call), die Beschwerde (complaint).", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Goethe B1 Listening Audio", url: "https://www.goethe.de/en/spr/prf/ueb/pb1.html" },
+            { name: "Slow German Podcast", url: "https://www.slowgerman.com" },
+            { name: "DW Learn German Audio", url: "https://learngerman.dw.com" }
+          ],
+          notes: ""
+        },
+        {
+          day: 6,
+          task: "Speaking Module Overview + Teil 1 Practice (Planning Task)",
+          focus: "speaking",
+          level: "B1",
+          lessonContent: {
+            title: "Sprechen Teil 1: The Planning Task (Partnership Dialogue)",
+            definition: "Speaking is done in PAIRS (or solo if no partner). Total time: 15 minutes, 100 points. **Teil 1 (3-4 min, 28 points):** You and partner plan an event together (party, trip, meeting, etc.). You get 5 topics/questions to discuss. Goal: Natural back-and-forth conversation, NOT a presentation!",
+            example: "**TYPICAL TEIL 1 SCENARIO:**\n'Plan a birthday party for a colleague. Discuss:'\n1. Wann? (When?)\n2. Wo? (Where?)\n3. Wie viele Gäste? (How many guests?)\n4. Was essen/trinken? (What food/drinks?)\n5. Welches Geschenk? (What gift?)\n\n**CONVERSATION STRUCTURE:**\n- **Start:** 'Was meinst du, wann sollen wir...?' (What do you think, when should we...?)\n- **Agree:** 'Gute Idee!' / 'Das finde ich auch.'\n- **Disagree politely:** 'Ich bin nicht sicher...' / 'Vielleicht wäre es besser...'\n- **Suggest:** 'Wie wäre es mit...?' / 'Wir könnten...'\n- **Confirm:** 'Also, wir machen es am... (date)'\n\n**SCORING:** Grammar 28%, Vocabulary 28%, Interaction 22%, Pronunciation 22%",
+            tips: "**CRITICAL TIP:** Don't dominate! Equal participation = higher score. If your partner is quiet, ask: 'Was denkst du?' (What do you think?). Use phrases like 'Ich würde vorschlagen...' (I would suggest) instead of 'Wir müssen...' (We must). Sounds more B1-level!"
           },
-          {
-            day: 3,
-            task: "Listening: Ordering and Interaction",
-            focus: "listening",
-            level: "B1",
-            lessonContent: {
-              title: "Eavesdropping: Following a Restaurant Conversation",
-              definition: "Today's task is to listen to a conversation between a waiter and a customer. Your goal is to be able to follow the flow: what food is ordered, any requests made, and the final payment. This tests your ability to process the rapid-fire exchange of polite phrases and specific vocabulary.",
-              example: "Listen for the modal verbs *möchten* (would like) and *können* (can). These are the signal words for requests and desires. E.g., 'Was **möchten** Sie trinken?' or 'Ich **kann** das leider nicht essen.' Pay extra attention to numbers when they mention prices or portion sizes.",
-              tips: "Try a **prediction exercise**: Before listening, list 5 things a customer might say and 5 things a waiter might say. Then, listen and see how many of your predictions match the actual dialogue. This forces your brain to anticipate the German structure."
-            },
-            subtasks: [
-                { description: "Listen to a 5-minute restaurant dialogue and list all food items and prices mentioned.", completed: false },
-                { description: "Identify and list 3 polite request phrases used by the customer.", completed: false },
-                { description: "Practice shadowing (repeating the audio immediately after it plays) the waiter's lines for 3 minutes.", completed: false }
-            ],
-            completed: false,
-            resources: [
-              { name: "YouTube German Dialogues", url: "https://www.youtube.com" },
-              { name: "Deutsche Welle B1", url: "https://www.dw.com" }
-            ],
-            notes: ""
+          subtasks: [
+            { description: "Watch official Goethe B1 speaking video (Teil 1 example) - note how candidates interact.", completed: false },
+            { description: "Learn 15 planning phrases: 'Wie wäre es mit...?', 'Ich schlage vor...', 'Was hältst du von...?', etc.", completed: false },
+            { description: "Practice with language partner (or record both sides yourself): Plan a class trip. Cover all 5 W-questions.", completed: false },
+            { description: "Self-assess recording: Did you interrupt? Did you use past/present tense correctly? Note 3 improvements.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Goethe B1 Speaking Video", url: "https://www.goethe.de/en/spr/prf/ueb/pb1.html" },
+            { name: "Tandem Language Exchange", url: "https://www.tandem.net" },
+            { name: "ConversationExchange", url: "https://www.conversationexchange.com" }
+          ],
+          notes: ""
+        },
+        {
+          day: 7,
+          task: "Week 1 Review + Mock Test (Reading Teil 1-2)",
+          focus: "review",
+          level: "B1",
+          lessonContent: {
+            title: "Consolidation Day: What Did We Actually Learn?",
+            definition: "Review is NOT optional - it's where learning becomes memory! Today, we test Week 1 knowledge: cases, present tense, exam format understanding. Take 2 reading sections under timed conditions. This reveals your current baseline and shows what needs more work.",
+            example: "**WEEK 1 CHECKLIST:**\n\n✅ Grammar:\n- 4 cases (NOM/AKK/DAT) articles memorized?\n- Present tense regular verbs conjugated?\n- Irregular verbs (sein, haben, werden) mastered?\n\n✅ Exam Strategy:\n- Downloaded official sample exam?\n- Understand 65/40/60/15 minute structure?\n- Know 60% passing requirement PER module?\n\n✅ Vocabulary:\n- 150 words learned (family, relationships)?\n- Nouns learned with article + plural?\n\n✅ Skills Practice:\n- Did one reading Teil?\n- Did one listening Teil?\n- Practiced speaking Teil 1 scenario?\n\n**TODAY'S MOCK TEST:**\nReading Teil 1 (Blog) + Teil 2 (Press) = 25 minutes\nScore yourself: /12 points (60% = 7 points)\n\n**If you scored <7:** Review cases more - reading comprehension often fails due to misidentifying subjects/objects.",
+            tips: "**STUDY TECHNIQUE:** Use 'active recall' - close your books and write everything you remember about dative case. Then check. What did you miss? That's your focus for next week! For vocabulary, test yourself English→German (harder direction). If you can produce the German word with correct article, you truly know it."
           },
-          {
-            day: 4,
-            task: "Role-Play: Handling a Restaurant Situation",
-            focus: "speaking",
-            level: "B1",
-            lessonContent: {
-              title: "The Customer is Always Right (or at least polite!)",
-              definition: "It's time to put your vocabulary and grammar to work! We're simulating a full restaurant interaction: ordering, confirming the order, asking for something missing (a napkin or salt), and paying. Focus on maintaining a polite, friendly tone and correctly using the *haben* and *können* conditional forms (*hätten* and *könnten*).",
-              example: "**Key Scenarios to Practice:**\n1. **Ordering:** 'Ich hätte gerne das Rindersteak (Akk.) und ein Bier (Akk.).'\n2. **Minor Complaint:** 'Entschuldigung, mir fehlt das Besteck. Könnten Sie es bitte bringen?'\n3. **Asking for Bill:** 'Könnten Sie uns bitte die Rechnung bringen?'\n4. **Payment:** 'Wir möchten bitte zusammen/getrennt zahlen.'",
-              tips: "Find a language partner or use a voice recorder. Focus specifically on your pronunciation of the 'ch' sound in words like *Ich* and *Küche*—it's a common stumbling block! Try to maintain eye contact (with the mirror or the camera) to build confidence."
-            },
-            subtasks: [
-                { description: "Practice ordering a three-course meal using 'Ich hätte gern...'.", completed: false },
-                { description: "Practice handling a minor issue (e.g., asking for the salt) using 'Könnten Sie...'.", completed: false },
-                { description: "Simulate asking for and paying the bill, practicing 'zusammen' and 'getrennt'.", completed: false }
-            ],
-            completed: false,
-            resources: [
-              { name: "ConversationExchange", url: "https://www.conversationexchange.com" },
-              { name: "Speaky", url: "https://www.speaky.com" }
-            ],
-            notes: ""
+          subtasks: [
+            { description: "Take timed Reading Teil 1 + 2 from official sample (25 min total). Record score: __/12.", completed: false },
+            { description: "Review all incorrect answers: WHY was it wrong? Vocabulary issue or comprehension issue?", completed: false },
+            { description: "Flashcard review: Go through all Week 1 vocabulary (150 words) - separate 'known' and 'needs practice' piles.", completed: false },
+            { description: "Grammar check: Write 10 sentences using all 3 cases learned (NOM/AKK/DAT) - have native speaker or teacher check if possible.", completed: false },
+            { description: "Plan Week 2: What was hardest this week? Allocate extra time to that skill next week.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Official Sample Exam", url: "https://www.goethe.de/en/spr/prf/ueb/pb1.html" },
+            { name: "Self-Assessment Checklist PDF", url: "https://www.goethe.de" }
+          ],
+          notes: ""
+        }
+      ]
+    },
+
+    // ============== WEEK 2: PERFECT TENSE & WRITING SKILLS ==============
+    {
+      week: 2,
+      goal: "Perfect Tense Mastery + Writing Module (Informal Email)",
+      targetVocabulary: 200,
+      estimatedHours: "16-20 hours",
+      days: [
+        {
+          day: 1,
+          task: "Perfekt Tense (Present Perfect): haben vs sein",
+          focus: "grammar",
+          level: "B1",
+          lessonContent: {
+            title: "The Perfect Tense: Your Past-Story Superpower",
+            definition: "**Perfekt (Present Perfect)** is THE most common past tense in spoken German! Structure: **Subject + haben/sein (conjugated) + ... + Past Participle (END)**. 90% of verbs use 'haben'. Use 'sein' ONLY for: movement verbs (gehen, fahren, fliegen) and state-change verbs (werden, sein, bleiben, sterben). This tense is CRITICAL for Writing Teil 1 and Speaking!",
+            example: "**PERFEKT FORMULA:**\n\n**With HABEN (most verbs):**\nIch **habe** gestern Pizza **gegessen**.\n*I ate pizza yesterday.*\n\nSie **hat** den Film **gesehen**.\n*She saw the film.*\n\n**With SEIN (movement/change):**\nWir **sind** nach Berlin **gefahren**.\n*We went to Berlin.*\n\nEr **ist** zu Hause **geblieben**.\n*He stayed at home.*\n\n**PAST PARTICIPLE FORMATION:**\n\n1. **Regular verbs:** ge + stem + t\n   - machen → gemacht\n   - lernen → gelernt\n   - kaufen → gekauft\n\n2. **Irregular verbs:** ge + stem + en (MEMORIZE!)\n   - sehen → gesehen\n   - essen → gegessen\n   - gehen → gegangen\n   - fahren → gefahren\n\n3. **Separable verbs:** prefix + ge + stem + t/en\n   - einkaufen → eingekauft\n   - aufstehen → aufgestanden\n\n4. **Inseparable verbs:** NO 'ge-'\n   - besuchen → besucht\n   - verstehen → verstanden\n   - erzählen → erzählt",
+            tips: "**MEMORIZATION TRICK:** Learn 'sein' verbs with the mnemonic **'BEGAD-SWIM'**: **B**leiben, **E**rscheinen, **G**ehen, **A**nkommen, **D**isappear + **S**terben, **W**erden, **I**st, **M**ove verbs. All others = haben! Make a dedicated flashcard deck for irregular past participles - these are tested HEAVILY in writing."
           },
-          {
-            day: 5,
-            task: "Writing a Balanced Restaurant Review",
-            focus: "writing",
-            level: "B1",
-            lessonContent: {
-              title: "Schreiben Sie eine Bewertung: Clear and Balanced Critique",
-              definition: "Your final task this week is to write a short, balanced restaurant review (100-120 words). You need to clearly state both positive and negative points using descriptive adjectives. The goal is clarity, conciseness, and, most importantly, correct **verb placement** (the verb is almost always the second element in a main clause!).",
-              example: "**Review Structure & Key Adjectives:**\n1. **Introduction (Name/Location):** Das Restaurant 'Zum Glück' ist in der Stadtmitte.\n2. **Positive Point (Food/Atmosphere):** Das Essen schmeckt wirklich **lecker**. Die Atmosphäre **ist** gemütlich.\n3. **Negative Point (Service/Speed):** **Aber** der Service **war** leider etwas **langsam**.\n4. **Conclusion:** Ich **empfehle** das Gericht trotzdem.\n\n**Connecting Words:** Use *aber* (but), *obwohl* (although), and *trotzdem* (nevertheless) to link your ideas smoothly.",
-              tips: "Count your words and your verbs! Ensure your verb is in the second position in simple sentences. Use a mix of present tense (for facts and opinions) and *Perfekt* (for a specific past event, like waiting for the food)."
-            },
-            subtasks: [
-                { description: "Draft three positive sentences using descriptive adjectives and correct verb placement.", completed: false },
-                { description: "Draft three negative sentences using 'nicht' or 'kein'.", completed: false },
-                { description: "Combine and edit into a final 100-120 word review, focusing on flow and consistent verb placement.", completed: false }
-            ],
-            completed: false,
-            resources: [
-              { name: "Journaly", url: "https://www.journaly.com" },
-              { name: "Google Docs", url: "https://docs.google.com" }
-            ],
-            notes: ""
-          }
-        ]
-      }
-    ]
-  };
+          subtasks: [
+            { description: "Memorize 30 irregular past participles: gehen→gegangen, sehen→gesehen, essen→gegessen, trinken→getrunken, etc.", completed: false },
+            { description: "Drill haben vs sein: Write 20 sentences in Perfekt - 15 with haben, 5 with sein (movement verbs).", completed: false },
+            { description: "Practice separable verbs: aufstehen, einkaufen, fernsehen - write 5 Perfekt sentences.", completed: false },
+            { description: "Translation practice: Translate 10 English past-tense sentences to German Perfekt.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Perfekt Tense Conjugator", url: "https://www.verbformen.com" },
+            { name: "German Past Participles List", url: "https://www.germanveryeasy.com/past-participles" }
+          ],
+          notes: ""
+        },
+        {
+          day: 2,
+          task: "Vocabulary: Daily Routine + Time Expressions",
+          focus: "vocabulary",
+          level: "B1",
+          lessonContent: {
+            title: "Thematic Block 2: Talking About Your Day",
+            definition: "Essential for Speaking Teil 2 (presentation) and Writing Teil 1 (informal email about past events). Learn verbs describing daily actions + time expressions. **Critical:** Learn separable verbs (aufstehen, einschlafen, fernsehen) - these are exam favorites!",
+            example: "**DAILY ROUTINE VERBS (50 must-know):**\n\n**Morning:**\n- aufwachen (to wake up)\n- aufstehen* (to get up)\n- sich duschen (to shower)\n- sich anziehen* (to get dressed)\n- frühstücken (to have breakfast)\n\n**Day:**\n- zur Arbeit/Schule gehen (to go to work/school)\n- arbeiten (to work)\n- eine Pause machen (to take a break)\n- zu Mittag essen (to have lunch)\n\n**Evening:**\n- nach Hause kommen* (to come home)\n- kochen (to cook)\n- fernsehen* (to watch TV)\n- sich ausruhen (to rest)\n- zu Abend essen (to have dinner)\n\n**Night:**\n- ins Bett gehen (to go to bed)\n- einschlafen* (to fall asleep)\n\n* = Separable verb!\n\n**TIME EXPRESSIONS (CRITICAL!):**\n- gestern (yesterday)\n- vorgestern (day before yesterday)\n- letzte Woche (last week)\n- letztes Wochenende (last weekend)\n- vor zwei Tagen (two days ago)\n- am Montag (on Monday)\n- um 8 Uhr (at 8 o'clock)\n- am Morgen/Mittag/Abend (in the morning/noon/evening)\n- in der Nacht (at night)\n- zuerst (first), dann (then), danach (after that), schließlich (finally)",
+            tips: "**EXAM CONNECTION:** Writing Teil 1 often asks about weekend/vacation activities. Having these verbs + time expressions ready = faster writing! Practice saying your typical day in past tense: 'Gestern bin ich um 7 Uhr aufgestanden. Dann habe ich gefrühstückt...' Record it!"
+          },
+          subtasks: [
+            { description: "Learn 40 daily routine verbs (with Perfekt forms) - create flashcards with example sentences.", completed: false },
+            { description: "Write your ideal weekend day in Perfekt tense (150 words) - use 10+ time expressions.", completed: false },
+            { description: "Learn frequency adverbs: immer, oft, manchmal, selten, nie + practice placement in sentences.", completed: false },
+            { description: "Speaking practice: Record 2-min description of 'yesterday' in past tense.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Daily Routine Vocabulary List", url: "https://www.germanveryeasy.com/daily-routine" },
+            { name: "Separable Verbs Guide", url: "https://www.germanveryeasy.com/separable-verbs" }
+          ],
+          notes: ""
+        },
+        {
+          day: 3,
+          task: "Writing Module: Teil 1 - Informal Email Strategy",
+          focus: "writing",
+          level: "B1",
+          lessonContent: {
+            title: "Schreiben Teil 1: The Friendly Email Formula",
+            definition: "Writing Teil 1 (30 min, 45 points) = informal email to a friend. You get 4 'Leitpunkte' (bullet points) to address. Must write ~80 words. **CRUCIAL:** Address ALL 4 points clearly, use correct informal format, and maintain consistent past/present tense. Missing even 1 point = automatic point deduction!",
+            example: "**TYPICAL TASK:**\n'Your friend Maria asked about your vacation. Write her an email:'\n1. Wo warst du? (Where were you?)\n2. Was hast du gemacht? (What did you do?)\n3. Wie war das Wetter? (How was the weather?)\n4. Lade sie zu dir ein. (Invite her to your place)\n\n**WINNING EMAIL STRUCTURE:**\n\n**Opening:**\nLiebe/Lieber [Name],\nvielen Dank für deine Nachricht! / Schön, wieder von dir zu hören!\n\n**Body (Address ALL 4 points - 1-2 sentences each):**\n[Point 1] Ich war letzten Monat in Italien.\n[Point 2] Ich habe viele Museen besucht und italienisch gegessen.\n[Point 3] Das Wetter war super - jeden Tag Sonnenschein!\n[Point 4] Hast du Lust, mich nächste Woche zu besuchen?\n\n**Closing:**\nLiebe Grüße / Bis bald\n[Your name]\n\n**SCORING CRITERIA:**\n- Content completion: 12 pts (3 pts per point)\n- Communication effectiveness: 12 pts\n- Formal accuracy (grammar/spelling): 12 pts\n- Vocabulary range: 9 pts",
+            tips: "**GOLDEN RULES:** 1) Number your points (1-4) in your draft to ensure you answered everything. 2) Use Perfekt tense for past events, Präsens for invitations/suggestions. 3) Keep it simple! Don't try complex sentences - clarity > complexity. 4) Learn standard phrases: 'Vielen Dank für...' 'Es tut mir leid, dass...' 'Ich freue mich auf...' 5) ALWAYS write 'du/dein/dir' lowercase (informal!)."
+          },
+          subtasks: [
+            { description: "Memorize informal email opening/closing phrases (10 variants for variety).", completed: false },
+            { description: "Practice: Write 3 emails responding to different prompts (vacation, party invitation, apology). Time: 20 min each.", completed: false },
+            { description: "Learn 20 'connector words' for better flow: zuerst, dann, außerdem, leider, zum Glück, trotzdem.", completed: false },
+            { description: "Self-check template: Create a checklist (4 points covered? Correct salutation? Perfekt tense correct?).", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Goethe B1 Writing Samples", url: "https://www.goethe.de/en/spr/prf/ueb/pb1.html" },
+            { name: "German Email Phrases", url: "https://www.germanveryeasy.com/email-writing" }
+          ],
+          notes: ""
+        },
+        {
+          day: 4,
+          task: "Listening Teil 2 + 3 Practice (Monologue & Conversation)",
+          focus: "listening",
+          level: "B1",
+          lessonContent: {
+            title: "Advanced Listening: Following Longer Passages",
+            definition: "Teil 2 (monologue) and Teil 3 (conversation) play ONCE only! This demands intense concentration. Teil 2 = lecture/tour guide (formal, lots of facts). Teil 3 = everyday conversation (informal, faster pace). Strategy: Predict content from questions, focus on question words (Wann? Wo? Wie viele?).",
+            example: "**TEIL 2 (MONOLOGUE) - 5 MCQs:**\nContext: Museum tour, company presentation, travel guide\nLength: ~3-4 minutes\nTrap: Too much detail - you'll hear numbers, dates, names - write them down immediately!\n\n**Example Question:**\nWann wurde das Museum eröffnet?\na) 1985  b) 1995  c) 2005\n\n**What to listen for:** 'Das Museum wurde 1995 eröffnet...' (passive voice!)\n\n**TEIL 3 (CONVERSATION) - 7 R/F:**\nContext: 2 people discussing plans, problems, opinions\nLength: ~3-4 minutes\nTrap: Speaker A says something, Speaker B disagrees - whose opinion does the question ask about?\n\n**Example Statement:**\nDie Frau findet das Restaurant zu teuer. R/F?\n\nListen for: 'Also, ICH finde das Restaurant ein bisschen teuer...' (Frau's opinion)",
+            tips: "**SURVIVAL TACTICS:** 1) In Teil 2, questions usually follow chronological order of the audio. 2) For numbers/dates, write them down AS YOU HEAR THEM (you won't remember!). 3) In Teil 3, note WHO says WHAT - use 'M' (Mann) and 'F' (Frau) symbols. 4) Learn these signal phrases: 'Das bedeutet...' (that means), 'Mit anderen Worten...' (in other words), 'Das Problem ist...' (the problem is)."
+          },
+          subtasks: [
+            { description: "Complete official sample Teil 2 (monologue) - focus on noting dates, numbers, names while listening.", completed: false },
+            { description: "Complete official sample Teil 3 (conversation) - mark M/F next to each R/F statement to track who said what.", completed: false },
+            { description: "Listen to 'DW Langsam gesprochene Nachrichten' (slow news) - summarize in 3 sentences.", completed: false },
+            { description: "Practice: Listen to any German podcast for 5 minutes - write down all numbers, dates, names you hear.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Official B1 Listening", url: "https://www.goethe.de/en/spr/prf/ueb/pb1.html" },
+            { name: "DW Slow News", url: "https://www.dw.com/de/deutsch-lernen/nachrichten/s-8030" }
+          ],
+          notes: ""
+        },
+        {
+          day: 5,
+          task: "Speaking Teil 2: Presentation on Everyday Topic",
+          focus: "speaking",
+          level: "B1",
+          lessonContent: {
+            title: "Sprechen Teil 2: Your 3-Minute Presentation",
+            definition: "Teil 2 (3-4 min, 28 points): Short presentation on an everyday topic (your choice from 2 topics). Structure: Introduction → Personal Experience → Pros/Cons → Situation in Your Country. You get 15 minutes prep time. Use notes, but don't READ them! This tests your ability to speak coherently for 3 minutes.",
+            example: "**TYPICAL TOPIC:**\n'Online Shopping - Pro and Contra'\n\n**WINNING STRUCTURE (4 parts):**\n\n**1. Introduction (30 sec):**\n'Mein Thema ist Online Shopping. Das ist heute sehr populär.'\n\n**2. Personal Experience (1 min):**\n'Ich kaufe oft online ein. Letzte Woche habe ich ein Buch gekauft. Es war sehr praktisch, weil ich nicht in die Stadt fahren musste.'\n\n**3. Pro and Contra (1 min):**\n'Ein Vorteil ist die Zeit - man spart viel Zeit. Ein Nachteil ist, dass man die Produkte nicht sehen kann vor dem Kauf.'\n\n**4. Situation in Your Country (30 sec):**\n'In meinem Land kaufen besonders junge Leute online. Es gibt viele Webshops wie Amazon.'\n\n**USEFUL PHRASES:**\n- Mein Thema ist...\n- Ein Vorteil/Nachteil ist...\n- Aus meiner Erfahrung...\n- In meinem Land / Bei uns...\n- Ich bin der Meinung, dass...\n- Zusammenfassend kann man sagen...",
+            tips: "**PREPARATION HACK:** Prepare 5 'universal topics' in advance: 1) Online Shopping 2) Social Media 3) Healthy Eating 4) Sports 5) Learning Languages. For each, write a 'skeleton' with personal story + 2 pros + 2 cons. Memorize this framework! During prep time, just adapt your skeleton to the specific exam topic. Practice speaking your 5 topics until you can do each without notes."
+          },
+          subtasks: [
+            { description: "Choose 3 common B1 topics (Social Media, Sports, Travel). Create 4-part outlines for each.", completed: false },
+            { description: "Record yourself presenting 'Online Shopping' topic - time it (must be 2.5-3.5 minutes).", completed: false },
+            { description: "Learn 15 opinion/argumentation phrases: 'Meiner Meinung nach...', 'Ich bin der Ansicht...', 'Einerseits... andererseits...'", completed: false },
+            { description: "Practice in front of mirror - work on eye contact and reducing 'ähm' filler sounds.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "B1 Speaking Topics List", url: "https://www.goethe.de" },
+            { name: "German Presentation Phrases", url: "https://www.germanveryeasy.com/presentation" }
+          ],
+          notes: ""
+        },
+        {
+          day: 6,
+          task: "Genitive Case + Prepositions (Wechselpräpositionen)",
+          focus: "grammar",
+          level: "B1",
+          lessonContent: {
+            title: "Completing the Case System: Genitive + Two-Way Prepositions",
+            definition: "**Genitive case** shows possession (like English 's). Less common in spoken German, but appears in reading texts! **Two-way prepositions (Wechselpräpositionen)** can take EITHER Accusative OR Dative - depends on whether there's movement (Akk) or location (Dat). This is frequently tested!",
+            example: "**GENITIVE ARTICLES:**\n\n| Case | Masc | Fem | Neut | Plural |\n|------|------|-----|------|--------|\n| GEN | des | der | des | der |\n\nAdd '-s' or '-es' to masculine/neuter nouns!\n\n**Example:**\nDas Auto **des Mannes** (the man's car)\nDie Tasche **der Frau** (the woman's bag)\n\n**Common Genitive Prepositions:**\n- während (during)\n- wegen (because of)\n- trotz (despite)\n- statt/anstatt (instead of)\n\n**TWO-WAY PREPOSITIONS (The Magic 9):**\nan, auf, hinter, in, neben, über, unter, vor, zwischen\n\n**RULE:**\n- **Movement (Wohin?)** → AKKUSATIV\n  'Ich gehe **in den** Park.' (I'm going INTO the park)\n  \n- **Location (Wo?)** → DATIV\n  'Ich bin **im** (in dem) Park.' (I am IN the park)\n\n**MEMORY TRICK:**\nMovement = Accusative (both have 'a'!)\nLocation = Dative (Dative stays put!)",
+            tips: "**EXAM TIP:** Genitive mostly appears in Reading texts with formal language. For writing/speaking, you can often avoid it by using 'von + Dative': 'die Tasche von der Frau' instead of 'die Tasche der Frau'. TWO-WAY PREPOSITIONS: Ask yourself 'Is someone/something moving TO a place?' = Akk. 'Is someone/something already AT a place?' = Dat. Practice with opposites: 'Ich lege das Buch auf den Tisch' (Akk - I'm placing it) vs 'Das Buch liegt auf dem Tisch' (Dat - it's lying there)."
+          },
+          subtasks: [
+            { description: "Learn genitive articles + 4 genitive prepositions (während, wegen, trotz, statt) with example sentences.", completed: false },
+            { description: "Memorize the 9 two-way prepositions - create flashcards with Akk and Dat examples for each.", completed: false },
+            { description: "Practice drill: 20 sentences choosing correct case after two-way prepositions (focus on in, auf, an).", completed: false },
+            { description: "Reading comprehension: Find 10 genitive constructions in a B1 text, identify the possessor.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "German Cases Complete Guide", url: "https://www.germanveryeasy.com/cases" },
+            { name: "Two-Way Prepositions Exercises", url: "https://www.schubert-verlag.de" }
+          ],
+          notes: ""
+        },
+        {
+          day: 7,
+          task: "Week 2 Review + Mock Writing Teil 1",
+          focus: "review",
+          level: "B1",
+          lessonContent: {
+            title: "Week 2 Consolidation: Testing Your Writing Skills",
+            definition: "Time to test your Perfekt tense and informal email writing under exam conditions! Take a full Writing Teil 1 (30 minutes). Self-assess using official criteria. This week covered critical grammar (Perfekt) and your first full writing practice - these are building blocks for everything else.",
+            example: "**WEEK 2 MASTERY CHECK:**\n\n✅ **Grammar:**\n- Can you form Perfekt with haben? (10 verbs)\n- Can you form Perfekt with sein? (5 movement verbs)\n- Do you know 20 irregular past participles?\n- Genitive case articles memorized?\n- Two-way prepositions: Can you distinguish Akk vs Dat?\n\n✅ **Writing:**\n- Can you write informal email in under 30 minutes?\n- Do you address all 4 Leitpunkte?\n- Correct opening/closing?\n- Consistent past/present tense?\n\n✅ **Vocabulary:**\n- 200+ new words learned this week?\n- Daily routine verbs + time expressions memorized?\n\n✅ **Speaking:**\n- Can you present a topic for 3 minutes?\n- Structured: Intro → Experience → Pro/Con → Your country?\n\n**TODAY'S MOCK TASK:**\nWriting Teil 1 (30 min):\n'Your friend asks about your last weekend. Write an email about:'\n1. Where you were\n2. What you did\n3. Who was with you  \n4. Invite them to do something together next weekend",
+            tips: "**SELF-ASSESSMENT RUBRIC:** Content (12 pts): Did I address all 4 points with sufficient detail? Communication (12 pts): Is it clear and natural? Grammar (12 pts): Count major errors (wrong case, wrong verb form, missing verb). More than 5 major errors = below 60%. Vocabulary (9 pts): Did I use varied vocabulary or repeat same words? Be honest with yourself - this shows what needs work in Week 3!"
+          },
+          subtasks: [
+            { description: "TIMED WRITING TEST: Complete one Writing Teil 1 task in exactly 30 minutes. No dictionary!", completed: false },
+            { description: "Self-assess using official criteria - score each category /12, /12, /12, /9. Total /45. Need 27+ to pass.", completed: false },
+            { description: "Identify your 3 biggest grammar mistakes from the writing - make flashcards for these specific rules.", completed: false },
+            { description: "Vocabulary review: Test yourself on all Week 1 + 2 words (400 total). Make a 'needs review' list.", completed: false },
+            { description: "Grammar drill: 20 mixed sentences practicing all 4 cases + two-way prepositions + Perfekt tense.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Official B1 Writing Assessment", url: "https://www.goethe.de" },
+            { name: "Self-Assessment Criteria Sheet", url: "https://www.goethe.de/en/spr/prf/ueb/pb1.html" }
+          ],
+          notes: ""
+        }
+      ]
+    },
+
+    // ============== WEEK 3: MODAL VERBS & FORMAL WRITING ==============
+    {
+      week: 3,
+      goal: "Modal Verbs + Writing Teil 2 (Forum Post) + Reading Strategies",
+      targetVocabulary: 200,
+      estimatedHours: "16-20 hours",
+      days: [
+        {
+          day: 1,
+          task: "Modal Verbs: können, müssen, wollen, dürfen, sollen, mögen",
+          focus: "grammar",
+          level: "B1",
+          lessonContent: {
+            title: "Modal Verbs: The Permission, Obligation, and Desire Squad",
+            definition: "**Modal verbs** express ability, necessity, permission, desire. Structure: **Subject + modal (conjugated) + ... + main verb (infinitive at END)**. Essential for expressing opinions (Speaking Teil 3) and writing suggestions. All 6 modals have irregular present tense - MUST memorize!",
+            example: "**THE 6 MODALS:**\n\n**können** (can, able to):\nich kann, du kannst, er kann, wir können, ihr könnt, sie können\n*Ich kann Deutsch sprechen.*\n\n**müssen** (must, have to):\nich muss, du musst, er muss, wir müssen, ihr müsst, sie müssen\n*Du musst die Hausaufgaben machen.*\n\n**wollen** (want to):\nich will, du willst, er will, wir wollen, ihr wollt, sie wollen\n*Sie will nach Italien fahren.*\n\n**dürfen** (may, allowed to):\nich darf, du darfst, er darf, wir dürfen, ihr dürft, sie dürfen\n*Hier darf man nicht rauchen.*\n\n**sollen** (should, supposed to):\nich soll, du sollst, er soll, wir sollen, ihr sollt, sie sollen\n*Du sollst mehr Wasser trinken.* (advice/recommendation)\n\n**mögen** (like) / möchten (would like - polite):\nich mag/möchte, du magst/möchtest, er mag/möchte\n*Ich möchte einen Kaffee.* (polite request)\n\n**WORD ORDER RULE:**\nSubject + modal + OTHER STUFF + infinitive\n*Ich **muss** morgen früh **aufstehen**.*",
+            tips: "**MEANING NUANCES:** 'müssen' = strong obligation (I have to), 'sollen' = recommendation/expectation (I should). 'wollen' = strong desire (I want), 'möchten' = polite want (I would like). For Speaking Teil 3, use 'man sollte...' (one should) to give suggestions - sounds more B1 than 'du musst!' Learn these perfect forms: können→gekonnt, müssen→gemusst, wollen→gewollt (though rarely used - usually: Ich habe gehen wollen)."
+          },
+          subtasks: [
+            { description: "Memorize all 6 modal verbs present tense conjugations (use flashcards for ich/du/er forms first).", completed: false },
+            { description: "Write 12 sentences using each modal twice - vary the main verbs (gehen, machen, kaufen, etc.).", completed: false },
+            { description: "Practice word order: 10 questions and answers with modals ('Kannst du...?' 'Ja, ich kann...').", completed: false },
+            { description: "Learn negative forms: 'nicht müssen' (don't have to) vs 'nicht dürfen' (not allowed) - 5 examples each.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Modal Verbs Conjugation", url: "https://www.verbformen.com" },
+            { name: "Modal Verbs Exercises", url: "https://www.schubert-verlag.de" }
+          ],
+          notes: ""
+        },
+        {
+          day: 2,
+          task: "Writing Teil 2: Semi-Formal Forum Post",
+          focus: "writing",
+          level: "B1",
+          lessonContent: {
+            title: "Schreiben Teil 2: The Online Forum Opinion Piece",
+            definition: "Writing Teil 2 (20 min, 25 points) = respond to online forum discussion. Semi-formal tone (use 'Sie' or no direct address). State YOUR OPINION clearly + give reasons/examples. ~80 words. Topic is always a current social issue (smartphones in school, work-life balance, etc.). Must show you can argue a position!",
+            example: "**TYPICAL FORUM TOPIC:**\n'Should employees be allowed to work from home?'\n\n**WINNING STRUCTURE:**\n\n**Opening (State position):**\n'Meiner Meinung nach sollten Mitarbeiter von zu Hause arbeiten dürfen.'\n*(In my opinion, employees should be allowed to work from home.)*\n\n**Reason 1 + Example:**\n'Ein wichtiger Vorteil ist die Flexibilität. Zum Beispiel kann man die Arbeitszeit besser mit der Familie kombinieren.'\n\n**Reason 2 + Example:**\n'Außerdem spart man viel Zeit, weil man nicht zur Arbeit fahren muss. Das ist besonders in Großstädten wichtig.'\n\n**Acknowledge opposite view (optional but impressive!):**\n'Natürlich gibt es auch Nachteile, wie weniger Kontakt zu Kollegen.'\n\n**Conclusion:**\n'Trotzdem bin ich überzeugt, dass Homeoffice eine gute Lösung ist.'\n\n**KEY PHRASES FOR OPINIONS:**\n- Meiner Meinung nach... (In my opinion)\n- Ich bin der Ansicht, dass... (I believe that)\n- Ich bin überzeugt, dass... (I'm convinced that)\n- Ein Vorteil/Nachteil ist... (An advantage/disadvantage is)\n- Zum Beispiel... (For example)\n- Außerdem... (Moreover)\n- Trotzdem... (Nevertheless)",
+            tips: "**STRATEGY:** Use a 3-part formula: 1) Your opinion (1 sentence), 2) Two reasons with examples (3-4 sentences total), 3) Conclusion (1 sentence). This ensures you hit 80 words and stay focused. DON'T use 'du' - either 'man' (one/people) or no direct address. Practice 10 common topics: online shopping, social media, public transport, healthy eating, sports, learning languages, etc. Have your 'universal reasons' ready (Zeit sparen, Geld sparen, flexibel sein, Gesundheit)!"
+          },
+          subtasks: [
+            { description: "Memorize 15 opinion/argumentation phrases (Meiner Meinung nach, Ich bin überzeugt, Ein Vorteil ist...).", completed: false },
+            { description: "PRACTICE: Write 3 forum posts on different topics - 20 minutes each, exactly 80 words.", completed: false },
+            { description: "Learn 20 'topic-neutral' nouns useful for any argument: der Vorteil, der Nachteil, die Flexibilität, die Zeit, das Geld, die Gesundheit, die Erfahrung, das Problem, die Lösung, die Möglichkeit.", completed: false },
+            { description: "Compare informal (Teil 1) vs semi-formal (Teil 2): Make a list of 5 key differences (greetings, pronouns, tone).", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "B1 Forum Writing Samples", url: "https://www.goethe.de" },
+            { name: "Opinion Phrases List", url: "https://www.germanveryeasy.com/opinion-expressions" }
+          ],
+          notes: ""
+        },
+        {
+          day: 3,
+          task: "Vocabulary: Work & Education (200 words)",
+          focus: "vocabulary",
+          level: "B1",
+          lessonContent: {
+            title: "Thematic Block 3: Professional Life",
+            definition: "Work and education are MAJOR themes in B1 exam - appear in reading, listening, speaking, and writing. Learn job titles, workplace vocabulary, and education system terms. Critical for Speaking Teil 2 presentations and Reading Teil 2 (press articles often about work trends).",
+            example: "**WORK VOCABULARY (Must-Know 100):**\n\n**Job Titles (with articles!):**\n- der Arzt / die Ärztin (doctor)\n- der Lehrer / die Lehrerin (teacher)\n- der Ingenieur / die Ingenieurin (engineer)\n- der Verkäufer / die Verkäuferin (salesperson)\n- der Koch / die Köchin (cook/chef)\n- der Kellner / die Kellnerin (waiter/waitress)\n- der Mechaniker / die Mechanikerin (mechanic)\n- der Programmierer / die Programmiererin (programmer)\n\n**Workplace:**\n- das Büro, -s (office)\n- die Firma, Firmen (company)\n- der Betrieb, -e (business/operation)\n- der Kollege, -n / die Kollegin, -nen (colleague)\n- der Chef / die Chefin (boss)\n- das Gehalt, -̈er (salary)\n- die Arbeitsstelle, -n (job position)\n- der Arbeitsplatz, -̈e (workplace)\n- die Bewerbung, -en (application)\n- der Lebenslauf, -̈e (CV/resume)\n- das Vorstellungsgespräch, -e (job interview)\n\n**Work Actions:**\n- sich bewerben (um + Akk) (to apply for)\n- einstellen (to hire)\n- kündigen (to quit/fire)\n- verdienen (to earn)\n- befördern (to promote)\n\n**EDUCATION:**\n- die Schule, -n (school)\n- die Universität, -en (university)\n- der Abschluss, -̈e (degree)\n- die Ausbildung, -en (vocational training)\n- das Studium, Studien (studies)\n- die Prüfung, -en (exam)\n- bestehen (to pass)\n- durchfallen (to fail)",
+            tips: "**EXAM CONNECTION:** For Speaking Teil 2, prepare a 3-minute talk on 'My Job' or 'My Studies'. Structure: What you do → What you like/dislike → Future plans. Use modal verbs: 'Ich muss jeden Tag früh aufstehen' (I have to get up early every day). Learn male AND female forms of jobs - shows B1 level awareness!"
+          },
+          subtasks: [
+            { description: "Create flashcards for 50 job titles (with articles + male/female forms where applicable).", completed: false },
+            { description: "Learn 30 workplace nouns + 10 work-related verbs (with example sentences).", completed: false },
+            { description: "Write a short text (100 words): 'My ideal job' - use modal verbs (Ich möchte..., Ich muss nicht...).", completed: false },
+            { description: "Learn education system terms + practice explaining your own education background in German (2 min speaking).", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "German Job Vocabulary", url: "https://www.germanveryeasy.com/jobs" },
+            { name: "Work & Career Vocabulary", url: "https://quizlet.com/subject/german-b1-work" }
+          ],
+          notes: ""
+        },
+        {
+          day: 4,
+          task: "Reading Teil 3 & 4 Practice: Matching & Opinions",
+          focus: "reading",
+          level: "B1",
+          lessonContent: {
+            title: "Reading Strategies: Teil 3 (Ads) & Teil 4 (Opinion Texts)",
+            definition: "**Teil 3** (7 points): Match 7 people with needs to 10 ads/announcements. **Teil 4** (7 points): Read 4 opinion texts on a topic, match 7 statements to correct person. Both require SCANNING skills - you don't read everything, you hunt for keywords! Process of elimination is your friend.",
+            example: "**TEIL 3 STRATEGY:**\nYou have 7 people with specific needs + 10 ads (3 are 'distractors' - won't match anyone!).\n\n**Example Person:**\n'Max sucht einen Deutschkurs am Wochenende in München. Er will in kleinen Gruppen lernen.'\n\n**Your Task:** Scan 10 ads for keywords:\n- München ✓\n-"
+            }
+        }
+      ]
+    }
+  ]};
 
   const vocabularyData = [
     { word: "Nominativ", translation: "nominative case", focus: "grammar", week: 1 },
@@ -287,12 +722,42 @@ const App = () => {
   ];
 
   // --- STATE MANAGEMENT & EFFECTS ---
+  const initialDataStructure = goetheB1CompleteData;
+  const DATA_VERSION = "2.1"; // Increment this when data structure changes
+  
   const [data, setData] = useState(() => {
     try {
       const saved = localStorage.getItem('germanLearningData');
-      return saved ? JSON.parse(saved) : initialDataStructure;
+      const savedVersion = localStorage.getItem('dataVersion');
+      
+      console.log('🔍 Checking localStorage...', { savedVersion, currentVersion: DATA_VERSION, hasSavedData: !!saved });
+      
+      // If no saved data OR version mismatch, use new data structure
+      if (!saved || savedVersion !== DATA_VERSION) {
+        console.log('✅ Using new data structure (version', DATA_VERSION, ')');
+        console.log('📦 New data structure:', { hasExamOverview: !!initialDataStructure.examOverview, weekCount: initialDataStructure.weeks?.length });
+        localStorage.removeItem('germanLearningData'); // Clear old data first
+        localStorage.setItem('dataVersion', DATA_VERSION);
+        return initialDataStructure;
+      }
+      
+      const parsedData = JSON.parse(saved);
+      
+      // Validate that examOverview exists (new structure)
+      if (!parsedData.examOverview) {
+        console.log('⚠️ Old data structure detected, upgrading to new structure');
+        console.log('📦 New data structure:', { hasExamOverview: !!initialDataStructure.examOverview, weekCount: initialDataStructure.weeks?.length });
+        localStorage.removeItem('germanLearningData'); // Clear old data first
+        localStorage.setItem('dataVersion', DATA_VERSION);
+        return initialDataStructure;
+      }
+      
+      console.log('📂 Loaded existing data from localStorage', { hasExamOverview: !!parsedData.examOverview, weekCount: parsedData.weeks?.length });
+      return parsedData;
     } catch (e) {
-      console.error("Could not load data from localStorage, resetting.", e);
+      console.error("❌ Could not load data from localStorage, resetting.", e);
+      localStorage.removeItem('germanLearningData'); // Clear corrupted data
+      localStorage.setItem('dataVersion', DATA_VERSION);
       return initialDataStructure;
     }
   });
@@ -313,8 +778,26 @@ const App = () => {
 
   const isPlanStarted = !!data.startDate;
 
+  // Force cache clearing on mount if version mismatch
+  useEffect(() => {
+    const savedVersion = localStorage.getItem('dataVersion');
+    if (savedVersion !== DATA_VERSION) {
+      console.log('🔄 Version mismatch detected! Clearing all cached data...');
+      console.log('   Old version:', savedVersion, '→ New version:', DATA_VERSION);
+      localStorage.removeItem('germanLearningData');
+      localStorage.removeItem('dataVersion');
+      localStorage.setItem('dataVersion', DATA_VERSION);
+      // Force reload to use new data
+      console.log('🔄 Reloading page...');
+      window.location.reload();
+    } else {
+      console.log('✅ Version check passed:', DATA_VERSION);
+    }
+  }, []); // Only run once on mount
+
   useEffect(() => {
     localStorage.setItem('germanLearningData', JSON.stringify(data));
+    localStorage.setItem('dataVersion', DATA_VERSION);
   }, [data]);
 
   useEffect(() => {
@@ -370,11 +853,12 @@ const App = () => {
                 d.day === dayNum ? (
                     // Update subtask
                     (() => {
-                        const newSubtasks = d.subtasks.map((sub, index) =>
+                        const subtasks = d.subtasks || [];
+                        const newSubtasks = subtasks.map((sub, index) =>
                             index === subtaskIndex ? { ...sub, completed: !sub.completed } : sub
                         );
                         // Recalculate overall task completion
-                        const allSubtasksCompleted = newSubtasks.every(sub => sub.completed);
+                        const allSubtasksCompleted = newSubtasks.length > 0 && newSubtasks.every(sub => sub.completed);
                         return { ...d, subtasks: newSubtasks, completed: allSubtasksCompleted };
                     })()
                 ) : d
@@ -385,7 +869,7 @@ const App = () => {
     }));
   };
 
-  const updateNotes = (weekNum, dayNum, notes) => {
+  const updateNotes = useCallback((weekNum, dayNum, notes) => {
     setData(prev => ({
       ...prev,
       weeks: prev.weeks.map(w =>
@@ -399,7 +883,7 @@ const App = () => {
           : w
       )
     }));
-  };
+  }, []);
 
   const updateGoal = (weekNum, goal) => {
     setData(prev => ({
@@ -467,6 +951,7 @@ const App = () => {
     const stats = getStats;
     const focusStats = getFocusStats;
     const nextTask = getNextTask;
+    const examOverview = data.examOverview;
 
     const insights = Object.entries(focusStats).map(([focus, stat]) => {
       const percent = stat.total > 0 ? Math.round((stat.completed / stat.total) * 100) : 0;
@@ -479,6 +964,89 @@ const App = () => {
           <h2 className="text-4xl font-bold mb-2">Welcome! 🚀</h2>
           <p className="text-gray-600 dark:text-gray-400 text-lg">Track your German B1 learning journey</p>
         </div>
+
+        {/* Exam Overview - Show if available */}
+        {examOverview && (
+          <div className="bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 text-white p-8 rounded-2xl shadow-2xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                <Award className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-3xl font-bold">Goethe-Zertifikat B1 Exam</h3>
+                <p className="text-sm opacity-90">Official German Language Certification</p>
+              </div>
+            </div>
+
+            {/* Key Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-white/10 backdrop-blur-md p-5 rounded-xl border border-white/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="w-5 h-5 text-yellow-300" />
+                  <p className="text-sm font-medium opacity-90">Total Duration</p>
+                </div>
+                <p className="text-3xl font-bold">{examOverview.totalDuration}</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md p-5 rounded-xl border border-white/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <BookOpen className="w-5 h-5 text-green-300" />
+                  <p className="text-sm font-medium opacity-90">Vocabulary Target</p>
+                </div>
+                <p className="text-2xl font-bold">{examOverview.vocabularyTarget?.split('(')[0]}</p>
+                <p className="text-xs opacity-75 mt-1">{examOverview.vocabularyTarget?.split('(')[1]?.replace(')', '')}</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md p-5 rounded-xl border border-white/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="w-5 h-5 text-blue-300" />
+                  <p className="text-sm font-medium opacity-90">Study Hours</p>
+                </div>
+                <p className="text-3xl font-bold">{examOverview.studyHoursRecommended?.split(' ')[0]}</p>
+                <p className="text-xs opacity-75 mt-1">recommended total</p>
+              </div>
+            </div>
+
+            {/* Exam Modules */}
+            <div>
+              <h4 className="text-lg font-bold mb-3 flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Exam Modules
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {examOverview.modules?.map((module, idx) => (
+                  <div key={idx} className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20 hover:bg-white/20 transition-all">
+                    <p className="font-bold text-lg mb-2">{module.name.split('(')[0]}</p>
+                    <div className="space-y-1 text-sm">
+                      <p className="opacity-90 flex items-center gap-2">
+                        <Clock className="w-3 h-3" />
+                        {module.duration}
+                      </p>
+                      <p className="opacity-90 flex items-center gap-2">
+                        <Target className="w-3 h-3" />
+                        Total: {module.points} points
+                      </p>
+                      <p className="font-semibold text-yellow-300 flex items-center gap-2">
+                        <Zap className="w-3 h-3" />
+                        Pass: {module.passing} points ({Math.round((module.passing/module.points)*100)}%)
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Additional Info */}
+            <div className="mt-6 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20">
+              <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-yellow-300" />
+                <strong>Important:</strong>
+              </p>
+              <p className="text-sm opacity-90">
+                You must achieve at least <strong>60% in EACH module</strong> individually to pass the exam. 
+                The 12-week plan below is designed to help you master all modules systematically.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Plan Status Card */}
         <div className="bg-gradient-to-r from-blue-500 to-blue-700 text-white p-6 rounded-xl shadow-xl">
@@ -558,18 +1126,38 @@ const App = () => {
     );
   };
 
-  const DayDetailView = ({ selectedDay, dayData, onBack }) => {
+  const DayDetailView = React.memo(({ selectedDay, dayData, onBack }) => {
     const { week, day } = selectedDay;
-    const { task, focus, level, lessonContent, subtasks, resources, notes } = dayData;
+    const { task, focus, level, lessonContent, subtasks = [], resources, notes } = dayData;
+
+    // Local state for notes to prevent re-render on every keystroke
+    const [localNotes, setLocalNotes] = useState(notes);
+
+    // Sync local notes with prop notes when day changes
+    useEffect(() => {
+      setLocalNotes(notes);
+    }, [selectedDay.week, selectedDay.day, notes]);
+
+    // Debounced update to parent state
+    useEffect(() => {
+      if (localNotes !== notes) {
+        const timer = setTimeout(() => {
+          updateNotes(week, day, localNotes);
+        }, 300); // 300ms debounce
+        
+        return () => clearTimeout(timer);
+      }
+    }, [localNotes, notes, week, day]);
 
     const subtasksCompleted = subtasks.filter(s => s.completed).length;
     const subtasksTotal = subtasks.length;
     const progress = subtasksTotal > 0 ? Math.round((subtasksCompleted / subtasksTotal) * 100) : 0;
 
-    const currentWeekGoal = data.weeks.find(w => w.week === week)?.goal || 'Weekly Goal';
+    const currentWeekData = data.weeks.find(w => w.week === week);
+    const currentWeekGoal = currentWeekData?.goal || 'Weekly Goal';
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-5xl mx-auto">
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition mb-4 font-medium"
@@ -577,105 +1165,174 @@ const App = () => {
           <ArrowLeft className='w-5 h-5'/> Back to Week {week} Tasks ({currentWeekGoal})
         </button>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl">
-            <div className='flex justify-between items-start mb-4'>
-                <div>
-                    <h1 className="text-3xl font-bold mb-1">{task}</h1>
-                    <div className="flex flex-wrap gap-2">
-                        <span className={`inline-flex items-center gap-1 text-sm font-semibold px-3 py-1 rounded-full border ${focusColors[focus]}`}>
-                            {focusIcons[focus]}
-                            {focus}
-                        </span>
-                        <span className="inline-block text-sm font-semibold px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600">
-                            Level: {level}
-                        </span>
-                        <span className="inline-block text-sm font-semibold px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-600">
-                            Day {day} ({calculateDate(week, day)})
-                        </span>
-                    </div>
+        {/* Header Card */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-8 rounded-2xl shadow-2xl">
+          <div className='flex justify-between items-start mb-4 flex-wrap gap-4'>
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-sm font-bold bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
+                  Week {week} • Day {day}
+                </span>
+                <span className="text-sm font-bold bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
+                  Level: {level}
+                </span>
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-3 leading-tight">{task}</h1>
+              <div className="flex flex-wrap gap-2">
+                <span className={`inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm border border-white/30`}>
+                  {focusIcons[focus]}
+                  <span className="capitalize">{focus}</span>
+                </span>
+                {isPlanStarted && (
+                  <span className="inline-flex items-center text-sm font-semibold bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full border border-white/30">
+                    📅 {calculateDate(week, day)}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/30 text-center min-w-[120px]">
+              <p className="text-4xl font-bold mb-1">{progress}%</p>
+              <p className="text-sm opacity-90">Complete</p>
+              <div className="mt-2 w-full bg-white/20 rounded-full h-2 overflow-hidden">
+                <div 
+                  className="h-full bg-white rounded-full transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Lesson Content Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+          {/* Lesson Title */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 p-6 border-b-4 border-blue-500">
+            <h2 className="text-2xl md:text-3xl font-bold text-blue-900 dark:text-blue-100 flex items-center gap-3">
+              <Lightbulb className='w-8 h-8 text-yellow-500'/> 
+              {lessonContent?.title || 'Lesson Details'}
+            </h2>
+          </div>
+
+          <div className="p-6 md:p-8 space-y-8">
+            {/* Definition Section */}
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-6 rounded-xl border-l-4 border-blue-600 shadow-md">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="bg-blue-600 text-white p-2 rounded-lg">
+                  <BookOpen className="w-6 h-6" />
                 </div>
-                <div className="text-right">
-                    <p className="text-xl font-bold text-green-600">{progress}%</p>
-                    <p className="text-xs text-gray-500">Subtasks Done</p>
-                </div>
+                <h3 className='text-xl font-bold text-blue-900 dark:text-blue-200'>
+                  Definition & Overview
+                </h3>
+              </div>
+              <div className="prose prose-blue dark:prose-invert max-w-none">
+                <FormattedText text={lessonContent?.definition || DayDetailPlaceholder} />
+              </div>
             </div>
 
-            <hr className="my-6 border-gray-200 dark:border-gray-700" />
-
-            {/* Lesson Content */}
-            <h2 className="text-2xl font-bold mb-4 text-blue-700 dark:text-blue-300 flex items-center gap-2"><Lightbulb className='w-6 h-6'/> Lesson: {lessonContent?.title || DayDetailPlaceholder}</h2>
-            <div className="space-y-4 text-gray-800 dark:text-gray-200">
-                <p className='whitespace-pre-line leading-relaxed'>{lessonContent?.definition || DayDetailPlaceholder}</p>
-
-                <div className='p-4 bg-gray-100 dark:bg-gray-700 rounded-xl border border-gray-300 dark:border-gray-600'>
-                    <h3 className='font-bold mb-2 text-lg'>Rules and Examples:</h3>
-                    <p className='font-mono text-sm whitespace-pre-line leading-relaxed'>{lessonContent?.example || DayDetailPlaceholder}</p>
+            {/* Example Section */}
+            <div className='bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 p-6 rounded-xl border border-gray-300 dark:border-gray-600 shadow-md'>
+              <div className="flex items-start gap-3 mb-4">
+                <div className="bg-gray-700 dark:bg-gray-600 text-white p-2 rounded-lg">
+                  <FileText className="w-6 h-6" />
                 </div>
-
-                <div className='p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-xl border-l-4 border-yellow-500'>
-                    <h3 className='font-bold mb-2 text-yellow-800 dark:text-yellow-300'>Teacher's Tip:</h3>
-                    <p className='whitespace-pre-line text-sm leading-relaxed'>{lessonContent?.tips || DayDetailPlaceholder}</p>
-                </div>
+                <h3 className='text-xl font-bold text-gray-900 dark:text-gray-100'>
+                  Rules, Examples & Reference
+                </h3>
+              </div>
+              <div className="prose prose-gray dark:prose-invert max-w-none">
+                <FormattedText text={lessonContent?.example || DayDetailPlaceholder} />
+              </div>
             </div>
 
-            <hr className="my-6 border-gray-200 dark:border-gray-700" />
-
-            {/* Subtasks */}
-            <h2 className="text-2xl font-bold mb-4 text-green-700 dark:text-green-300 flex items-center gap-2"><Target className='w-6 h-6'/> Daily Goals Checklist</h2>
-
-            <div className="space-y-4">
-                {subtasks.map((subtask, subIndex) => (
-                    <div key={subIndex} className={`flex items-start p-3 rounded-lg border transition-all ${subtask.completed ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700' : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600'}`}>
-                        <input
-                            type="checkbox"
-                            checked={subtask.completed}
-                            onChange={() => toggleSubtask(week, day, subIndex)}
-                            className="mt-1 w-5 h-5 rounded-md text-green-600 focus:ring-green-500 cursor-pointer flex-shrink-0"
-                        />
-                        <p className={`text-base flex-1 ml-3 ${subtask.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200'}`}>
-                            {subtask.description}
-                        </p>
-                    </div>
-                ))}
-            </div>
-
-            <hr className="my-6 border-gray-200 dark:border-gray-700" />
-
-            {/* Notes and Resources */}
-            <div className="grid md:grid-cols-2 gap-6">
-                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
-                    <label className="text-sm font-semibold block mb-2 text-gray-700 dark:text-gray-300 flex items-center gap-1">📝 My Notes & Reflections:</label>
-                    <textarea
-                        value={notes}
-                        onChange={(e) => updateNotes(week, day, e.target.value)}
-                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 transition"
-                        rows="5"
-                        placeholder="Add your notes, reflections, or list sentences that gave you trouble here..."
-                    />
+            {/* Tips Section */}
+            <div className='bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-6 rounded-xl border-l-4 border-yellow-500 shadow-md'>
+              <div className="flex items-start gap-3 mb-4">
+                <div className="bg-yellow-500 text-white p-2 rounded-lg">
+                  <Target className="w-6 h-6" />
                 </div>
-
-                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
-                    <p className="text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300 flex items-center gap-1">📎 Additional Resources:</p>
-                    <div className="space-y-2">
-                        {resources.map((r, i) => (
-                          <a
-                            key={i}
-                            href={r.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center w-full justify-between bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-300 px-3 py-2 rounded-lg text-sm hover:bg-blue-50 dark:hover:bg-blue-900 transition shadow-sm border border-blue-200 dark:border-blue-700"
-                          >
-                            {r.name}
-                            <ExternalLink className="w-4 h-4 flex-shrink-0" />
-                          </a>
-                        ))}
-                    </div>
-                </div>
+                <h3 className='text-xl font-bold text-yellow-900 dark:text-yellow-200'>
+                  Teacher's Tips & Strategies
+                </h3>
+              </div>
+              <div className="prose prose-yellow dark:prose-invert max-w-none">
+                <FormattedText text={lessonContent?.tips || DayDetailPlaceholder} />
+              </div>
             </div>
+          </div>
+        </div>
+
+        {/* Subtasks Card */}
+        <div className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
+          <h2 className="text-2xl font-bold mb-6 text-green-700 dark:text-green-300 flex items-center gap-3">
+            <CheckSquare className='w-7 h-7'/> Daily Goals Checklist
+          </h2>
+
+          <div className="space-y-3">
+            {subtasks.map((subtask, subIndex) => (
+              <div 
+                key={subIndex} 
+                className={`flex items-start p-4 rounded-xl border-2 transition-all hover:shadow-md ${
+                  subtask.completed 
+                    ? 'bg-green-50 dark:bg-green-900/30 border-green-400 dark:border-green-600' 
+                    : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={subtask.completed}
+                  onChange={() => toggleSubtask(week, day, subIndex)}
+                  className="mt-1 w-6 h-6 rounded-md text-green-600 focus:ring-green-500 cursor-pointer flex-shrink-0 border-2"
+                />
+                <p className={`text-base flex-1 ml-4 ${
+                  subtask.completed 
+                    ? 'line-through text-gray-500 dark:text-gray-400' 
+                    : 'text-gray-800 dark:text-gray-200 font-medium'
+                }`}>
+                  {subtask.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Notes and Resources */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
+            <label className="text-lg font-bold block mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              📝 My Notes & Reflections
+            </label>
+            <textarea
+              value={localNotes}
+              onChange={(e) => setLocalNotes(e.target.value)}
+              className="w-full p-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl text-sm bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              rows="8"
+              placeholder="Add your notes, reflections, or list sentences that gave you trouble here..."
+            />
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
+            <p className="text-lg font-bold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              📎 Additional Resources
+            </p>
+            <div className="space-y-3">
+              {resources.map((r, i) => (
+                <a
+                  key={i}
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 px-4 py-3 rounded-xl text-sm font-medium hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/50 dark:hover:to-indigo-900/50 transition-all shadow-sm hover:shadow-md border border-blue-200 dark:border-blue-700 group"
+                >
+                  <span>{r.name}</span>
+                  <ExternalLink className="w-4 h-4 flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
-  };
+  });
 
   const TasksView = () => {
     const week = data.weeks.find(w => w.week === currentWeek);
@@ -684,6 +1341,31 @@ const App = () => {
     return (
       <div className="space-y-6">
         <h2 className="text-3xl font-bold">📋 Learning Plan Overview</h2>
+
+        {/* Week Info Card */}
+        {week && (
+          <div className="bg-gradient-to-r from-indigo-500 to-indigo-700 text-white p-5 rounded-xl shadow-lg">
+            <h3 className="text-xl font-bold mb-3">Week {week.week} Overview</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {week.targetVocabulary && (
+                <div className="bg-white/10 backdrop-blur-sm p-3 rounded-lg">
+                  <p className="text-sm opacity-90 mb-1">Target Vocabulary</p>
+                  <p className="text-2xl font-bold">{week.targetVocabulary} words</p>
+                </div>
+              )}
+              {week.estimatedHours && (
+                <div className="bg-white/10 backdrop-blur-sm p-3 rounded-lg">
+                  <p className="text-sm opacity-90 mb-1">Estimated Study Time</p>
+                  <p className="text-2xl font-bold">{week.estimatedHours}</p>
+                </div>
+              )}
+              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-lg">
+                <p className="text-sm opacity-90 mb-1">Days</p>
+                <p className="text-2xl font-bold">{week.days.length} tasks</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
@@ -745,44 +1427,77 @@ const App = () => {
             </div>
           ) : (
             filtered.map(day => {
-                const subtasksCompleted = day.subtasks.filter(s => s.completed).length;
-                const subtasksTotal = day.subtasks.length;
+                const subtasksCompleted = (day.subtasks || []).filter(s => s.completed).length;
+                const subtasksTotal = (day.subtasks || []).length;
+                const progressPercent = subtasksTotal > 0 ? Math.round((subtasksCompleted / subtasksTotal) * 100) : 0;
+                
                 return (
               <div
                 key={day.day}
                 onClick={() => setSelectedDay({ week: currentWeek, day: day.day })}
-                className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-md transition-all cursor-pointer hover:shadow-xl hover:ring-2 ${
-                  day.completed ? 'opacity-90 ring-green-500/50 bg-gradient-to-r from-green-50/50 to-green-100/50 dark:from-green-900/30 dark:to-green-900/70' : 'ring-blue-500/50'
+                className={`bg-white dark:bg-gray-800 border-2 rounded-xl p-6 shadow-md transition-all cursor-pointer hover:shadow-2xl hover:scale-[1.01] ${
+                  day.completed 
+                    ? 'border-green-500 bg-gradient-to-br from-green-50/70 to-green-100/70 dark:from-green-900/30 dark:to-green-800/40' 
+                    : 'border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500'
                 }`}
               >
-                <div className="flex items-start justify-between space-x-4">
-                  
-                  <div className="flex-1">
-                    <div className='flex justify-between items-start mb-2'>
-                        <h3 className={`font-bold text-xl ${day.completed ? 'opacity-70' : 'text-gray-900 dark:text-gray-100'}`}>
-                            Day {day.day}: {day.task}
-                        </h3>
-                        {isPlanStarted && (
-                            <span className='inline-flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/50 px-3 py-1 rounded-full border border-blue-200 dark:border-blue-700'>
-                                {calculateDate(currentWeek, day.day)}
-                            </span>
+                <div className="space-y-4">
+                  {/* Header Section */}
+                  <div className='flex justify-between items-start gap-4'>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Day {day.day}</span>
+                        {day.completed && (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/50 px-2 py-0.5 rounded-full">
+                            <CheckSquare className="w-3 h-3" /> Completed
+                          </span>
                         )}
+                      </div>
+                      <h3 className="font-bold text-xl mb-2 text-gray-900 dark:text-gray-100 leading-tight">
+                        {day.task}
+                      </h3>
                     </div>
+                    {isPlanStarted && (
+                      <span className='inline-flex items-center text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/50 px-3 py-1.5 rounded-full border border-blue-200 dark:border-blue-700 whitespace-nowrap'>
+                        📅 {calculateDate(currentWeek, day.day)}
+                      </span>
+                    )}
+                  </div>
 
-                    <p className='text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2'>
-                        {day.lessonContent?.definition || DayDetailPlaceholder}
-                    </p>
+                  {/* Description */}
+                  <p className='text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2'>
+                    {day.lessonContent?.definition || DayDetailPlaceholder}
+                  </p>
 
-                    <div className="flex flex-wrap items-center gap-4 mt-4">
-                        <span className={`inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full border ${focusColors[day.focus]}`}>
-                            {focusIcons[day.focus]}
-                            {day.focus}
-                        </span>
-                        <div className='text-sm font-medium flex items-center gap-2'>
-                            {day.completed ? <CheckSquare className='w-4 h-4 text-green-600' /> : <MinusSquare className='w-4 h-4 text-gray-500' />}
-                            {subtasksCompleted}/{subtasksTotal} Subtasks Complete
-                        </div>
+                  {/* Progress Bar */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-xs font-medium text-gray-600 dark:text-gray-400">
+                      <span>Progress</span>
+                      <span>{subtasksCompleted}/{subtasksTotal} subtasks ({progressPercent}%)</span>
                     </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          progressPercent === 100 
+                            ? 'bg-green-500' 
+                            : progressPercent > 0 
+                            ? 'bg-blue-500' 
+                            : 'bg-gray-300 dark:bg-gray-600'
+                        }`}
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Footer with Focus Badge */}
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${focusColors[day.focus]}`}>
+                      {focusIcons[day.focus]}
+                      <span className="capitalize">{day.focus}</span>
+                    </span>
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                      Level: <span className="font-bold text-gray-700 dark:text-gray-300">{day.level}</span>
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1229,7 +1944,7 @@ const App = () => {
           {renderContent()}
         </main>
 
-        {/* Modal */}o it is in the Nominative case.
+        {/* Reset Modal */}
         {showResetModal && <ResetModal />}
 
         {/* Backdrop for Mobile */}

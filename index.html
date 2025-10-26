@@ -10,6 +10,16 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Clear old cache on first load
+      const currentVersion = '2.1';
+      const savedVersion = localStorage.getItem('dataVersion');
+      if (!savedVersion || savedVersion !== currentVersion) {
+        console.log('🔄 Clearing old data and updating to version', currentVersion);
+        localStorage.removeItem('germanLearningData');
+        localStorage.setItem('dataVersion', currentVersion);
+      }
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

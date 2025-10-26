@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Cache - German B1 Learning Tracker</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        .info {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .status {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
+        .success {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .danger {
+            background: #dc3545;
+        }
+        .danger:hover {
+            background: #c82333;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        .data-view {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Clear Cache</h1>
+        <p>This tool helps you clear the localStorage cache for the German B1 Learning Tracker app.</p>
+        
+        <div class="info" id="currentStatus">
+            <strong>Current Status:</strong>
+            <div id="statusContent">Checking...</div>
+        </div>
+
+        <div class="data-view" id="dataView">
+            <strong>Current Data in localStorage:</strong>
+            <pre id="dataContent">Loading...</pre>
+        </div>
+
+        <button onclick="checkStorage()">🔍 Check Storage</button>
+        <button onclick="clearCache()" class="danger">🗑️ Clear Cache</button>
+        <button onclick="clearAndRedirect()">🔄 Clear & Go to App</button>
+
+        <div class="info">
+            <strong>What this does:</strong>
+            <ul>
+                <li>Shows what's currently stored in localStorage</li>
+                <li>Clears <code>germanLearningData</code> and <code>dataVersion</code></li>
+                <li>Forces the app to load the new data structure (v2.1)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function checkStorage() {
+            const data = localStorage.getItem('germanLearningData');
+            const version = localStorage.getItem('dataVersion');
+            const darkMode = localStorage.getItem('darkMode');
+            
+            const statusDiv = document.getElementById('statusContent');
+            statusDiv.innerHTML = `
+                <div style="margin-top: 10px;">
+                    <strong>Version:</strong> ${version || 'Not set'}<br>
+                    <strong>Data exists:</strong> ${data ? 'Yes (' + Math.round(data.length / 1024) + ' KB)' : 'No'}<br>
+                    <strong>Dark mode:</strong> ${darkMode || 'Not set'}
+                </div>
+            `;
+
+            const dataDiv = document.getElementById('dataContent');
+            if (data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    dataDiv.textContent = JSON.stringify({
+                        hasExamOverview: !!parsed.examOverview,
+                        hasStartDate: !!parsed.startDate,
+                        startDate: parsed.startDate,
+                        weekCount: parsed.weeks?.length || 0,
+                        firstWeekTitle: parsed.weeks?.[0]?.title || 'N/A',
+                        firstDayTitle: parsed.weeks?.[0]?.days?.[0]?.title || 'N/A',
+                        version: version
+                    }, null, 2);
+                } catch (e) {
+                    dataDiv.textContent = 'Error parsing data: ' + e.message;
+                }
+            } else {
+                dataDiv.textContent = 'No data in localStorage';
+            }
+        }
+
+        function clearCache() {
+            const confirmed = confirm('Are you sure you want to clear all cached data? This cannot be undone.');
+            if (!confirmed) return;
+
+            localStorage.removeItem('germanLearningData');
+            localStorage.removeItem('dataVersion');
+            
+            const statusDiv = document.getElementById('currentStatus');
+            statusDiv.className = 'status success';
+            statusDiv.innerHTML = '<strong>✅ Success!</strong> Cache cleared. The app will load fresh data on next visit.';
+            
+            checkStorage();
+        }
+
+        function clearAndRedirect() {
+            localStorage.removeItem('germanLearningData');
+            localStorage.removeItem('dataVersion');
+            alert('Cache cleared! Redirecting to app...');
+            window.location.href = '/';
+        }
+
+        // Auto-check on load
+        window.onload = checkStorage;
+    </script>
+</body>
+</html>
