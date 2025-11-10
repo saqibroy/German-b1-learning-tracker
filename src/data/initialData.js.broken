@@ -1,0 +1,658 @@
+export const initialDataStructure = {
+  startDate: null, // Tracks the start date of the plan (YYYY-MM-DD string)
+  weeks: [
+    {
+      week: 1,
+      goal: "Cases & Basic Sentence Structure",
+      days: [
+        {
+          day: 1,
+          task: "Understanding telc B1 Exam Format + Nominative & Accusative Cases",
+          focus: "grammar",
+          level: "B1",
+          lessonContent: {
+            title: "Welcome to telc B1 Preparation!",
+            definition: "Willkommen! Today we start with understanding the **telc Deutsch B1 exam structure** and the two most essential German cases: **Nominative (Nominativ)** and **Accusative (Akkusativ)**.\n\n**telc B1 Exam Overview:**\n\n**Written Exam (Schriftliche Prüfung): 150 minutes total**\n1. **Leseverstehen** (Reading): 3 parts - Global, Detail, Selective understanding\n2. **Sprachbausteine** (Language Elements): Grammar & vocabulary fill-in exercises - UNIQUE to telc!\n3. **Hörverstehen** (Listening): 3 parts - ~30 minutes\n4. **Schriftlicher Ausdruck** (Writing): ONE email/letter task with 4 guiding points - 30 minutes\n\n**Oral Exam (Mündliche Prüfung): 15-16 minutes (+ 20 min prep)**\n- Teil 1: Sich vorstellen (Getting to know each other)\n- Teil 2: Über ein Thema sprechen (Discuss a topic)\n- Teil 3: Gemeinsam etwas planen (Plan something together)\n\n**Passing Requirements:**\n- Written section: 60% (135/225 points)\n- Oral section: 60% (45/75 points)\n\n---\n\n**Now, let's start with Cases!** The **Nominative** is the *hero* of the sentence—the one doing the action (the **Subject**). The **Accusative** is the *receiver* of the action (the **Direct Object**). The great news? In B1, the main change you worry about is only for the masculine article!",
+            example: "**Your Article Cheat Sheet (Der, Die, Das):**\n\n| Article | Nominative (Hero) | Accusative (Receiver) |\n|---|---|---|\n| Masculine | **der** | **den** |\n| Feminine | **die** | **die** |\n| Neuter | **das** | **das** |\n| Plural | **die** | **die** |\n\n**Example Sentence:**\n**Der** Hund (Nom.) sieht **den** Mann (Akk.).\n*(The dog sees the man.)*\n*The dog* is the hero (Nom.) doing the seeing. *The man* is the receiver (Akk.).",
+            tips: "**Exam Tip:** The telc B1 has a dedicated 'Sprachbausteine' section testing grammar like cases, prepositions, and conjunctions—we'll practice this throughout!\n\n**Grammar Tip:** Always ask: 'Who/What is doing the action?' (Nom.) and 'Who/What is receiving the action?' (Akk.). This helps you choose the correct article automatically."
+          },
+          subtasks: [
+            { description: "Read and understand the telc B1 exam structure above. Note the 4 sections and time allocations.", completed: false },
+            { description: "Review and memorize the definite articles for Nominative and Accusative (especially the **der/den** change).", completed: false },
+            { description: "Identify the subject (Nominative) in 10 example sentences (focus on 'der' vs 'den').", completed: false },
+            { description: "Write 5 simple sentences using an Accusative object, like 'Ich sehe den Baum'.", completed: false },
+            { description: "Practice reading the articles out loud: 'Der, den, die, die, das, das, die, die'.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "telc Official Website", url: "https://www.telc.net" },
+            { name: "Online Case Trainer", url: "https://deutschlern.net" },
+            { name: "telc B1 Practice Materials", url: "https://www.telc.net/en/candidates/language-examinations/exams/detail/zertifikat-deutsch-telc-deutsch-b1.html" }
+          ],
+          notes: ""
+        },
+        {
+          day: 2,
+          task: "Core Daily Life Vocabulary (50 words)",
+          focus: "vocabulary",
+          level: "B1",
+          lessonContent: {
+            title: "The Daily 50: Nouns, Verbs, and Articles",
+            definition: "Your goal today is to build up the words you need for talking about your daily life: family, house, work, and hobbies. We call this **active recall**—it's not enough to just recognize the words; you must be able to use them in a sentence!",
+            example: "**Target Vocabulary: Always learn with the Article!**\n\n| German (Singular) | Plural | English |\n|---|---|---|\n| **der** Tisch | die Tische | the table |\n| **das** Buch | die Bücher | the book |\n| **die** Küche | die Küchen | the kitchen |\n| **der** Computer | die Computer | the computer |\n| **die** Lampe | die Lampen | the lamp |\n\n**Important Verbs:**\n1. arbeiten (to work)\n2. kochen (to cook)\n3. lesen (to read)\n4. schlafen (to sleep)\n5. gehen (to go)\n\n**Example:** Ich **lese** (verb) **das** Buch (Akk.).",
+            tips: "Listen closely to native speakers say these words! Also, remember the **Golden Rule of German Nouns**: *Never* learn a noun without its definite article (der, die, das) and its plural form. This simple habit saves you massive headaches later!"
+          },
+          subtasks: [
+            { description: "Learn the 10 target nouns (with articles and plural forms).", completed: false },
+            { description: "Learn the 5 target verbs and their meanings.", completed: false },
+            { description: "Create 10 short sentences using the new vocabulary (try to include both Nominative and Accusative!).", completed: false },
+            { description: "Practice spelling five of the new words in German out loud.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Anki Web Flashcards", url: "https://www.ankiweb.net" },
+            { name: "Quizlet: B1 Daily Vocab", url: "https://quizlet.com" }
+          ],
+          notes: ""
+        },
+        {
+          day: 3,
+          task: "Active Listening: Identifying Key Information",
+          focus: "listening",
+          level: "B1",
+          lessonContent: {
+            title: "Listening Like a Native: Focusing on the Core Message",
+            definition: "We are moving from passive hearing to **active listening**. This means you stop focusing on *every* word, and instead focus on grabbing the specific key facts: **Who**, **What**, **When**, and **Where**. This builds huge confidence because you realize you don't need 100% comprehension to understand the message.",
+            example: "**What to Listen For:**\n1. **Nominative/Subject:** Listen for who is starting the conversation or doing the main action.\n2. **Verbs:** The main action word (e.g., 'kaufen', 'fahren', 'sagen').\n3. **New Vocab:** Actively search for the vocabulary you learned on Day 2.\n\nE.g., if you hear 'Der Mann kauft den Kaffee,' you must understand *who* is buying (*Der Mann*) and *what* is being bought (*den Kaffee*).",
+            tips: "Listen twice: first time with your eyes closed for the general atmosphere and main idea. Second time, follow the transcript and specifically underline the nouns and verbs you learned. Try to mentally identify the case (Nom. or Akk.) of each underlined noun."
+          },
+          subtasks: [
+            { description: "Listen to a 10-minute B1 podcast. Summarize the main idea in 3 English sentences.", completed: false },
+            { description: "Transcribe 5 sentences verbatim from the podcast.", completed: false },
+            { description: "Identify 5 nouns from the listening task and determine their article and case (Nom./Akk.).", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "DW Learn German Podcasts", url: "https://www.dw.com" },
+            { name: "Slow German for Beginners", url: "https://www.slowgerman.com" }
+          ],
+          notes: ""
+        },
+        {
+          day: 4,
+          task: "Speaking Practice: Self-Introduction Fluency",
+          focus: "speaking",
+          level: "B1",
+          lessonContent: {
+            title: "My German Story: Speaking with Flow",
+            definition: "Today's task is all about flow! Your goal is to deliver a smooth, **2-minute self-introduction** covering name, origin, job, family, and hobbies. Forget about absolute grammatical perfection for 2 minutes—focus on keeping the conversation moving without long, awkward pauses. This is how you build fluency and confidence.",
+            example: "**Introduction Structure (Try to use Accusative for family/pets!):**\n1. **Name/Age:** Ich bin Max und ich bin 25 Jahre alt.\n2. **Origin/Living:** Ich komme aus Spanien, aber ich lebe in Berlin.\n3. **Job/Study:** Ich arbeite als Lehrer/Ich studiere Informatik.\n4. **Family/Pets:** Ich habe einen Bruder (Akk.) und eine Katze (Akk.).\n5. **Hobbies:** Ich lese gern Bücher (Akk.) und koche oft.\n\n**Connecting Words:** Use *und* (and), *aber* (but), and *weil* (because) to link your ideas.",
+            tips: "Recording yourself is your best friend here! Listen back and count your pauses. Also, prepare natural filler phrases like 'Ähm...' or 'Also,...' to sound more natural when you are thinking. This is what natives do!"
+          },
+          subtasks: [
+            { description: "Write and memorize a 2-minute script covering the 5 topics above.", completed: false },
+            { description: "Practice delivery 3 times, focusing on speed and flow (don't stop if you make a mistake!).", completed: false },
+            { description: "Record your final 2-minute introduction and listen back only for your most common mistakes (like article/case errors).", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Tandem Language Exchange", url: "https://www.tandem.net" },
+            { name: "Preply German Tutors", url: "https://preply.com" }
+          ],
+          notes: ""
+        },
+        {
+          day: 5,
+          task: "telc B1 Writing: ONE Email with 4 Leitpunkte (Guiding Points)",
+          focus: "writing",
+          level: "B1",
+          lessonContent: {
+            title: "Schriftlicher Ausdruck: The telc B1 Writing Task",
+            definition: "**CRITICAL telc B1 Format:** Unlike other exams, telc B1 has only **ONE** writing task (not three!). You write a **semi-formal or informal email/letter** responding to **4 specific Leitpunkte (guiding points)** in exactly **30 minutes**. Target length: **120-150 words**.\n\n**Typical Scenarios:**\n1. **Semi-formal:** Writing to apartment manager, company inquiry, course registration, complaint to service\n2. **Informal:** Responding to friend's invitation, giving advice, sharing plans\n\n**The 4 Leitpunkte Structure:**\nThe exam gives you a situation and 4 points you MUST address:\n- Point 1: Often a question (e.g., 'When can you come?')\n- Point 2: Request for information (e.g., 'Ask about the price')\n- Point 3: Give your opinion (e.g., 'What do you think about...?')\n- Point 4: Suggest/propose something (e.g., 'Make a suggestion for...')\n\n**You MUST address ALL 4 points clearly!**",
+            example: "**Example Task (Informal):**\n*Your friend Maria invites you to her birthday party. Write an email:*\n1. Thank her for the invitation\n2. Say whether you can come (give reasons)\n3. Ask what you should bring\n4. Suggest an activity for the party\n\n**Sample Response Structure:**\n\n*Liebe Maria,*\n\n*vielen Dank für die Einladung zu deiner Geburtstagsparty! [Point 1] Ich freue mich sehr und komme gerne am Samstag. [Point 2] Leider kann ich erst um 19 Uhr kommen, weil ich vorher arbeiten muss.*\n\n*Was soll ich mitbringen? [Point 3] Möchtest du einen Kuchen oder lieber etwas zu trinken? Ich kann auch beide Sachen besorgen.*\n\n*Ich habe eine Idee: [Point 4] Wir könnten zusammen Karaoke singen! Das macht immer viel Spaß. Was meinst du?*\n\n*Bis bald!*\n*[Your name]*\n\n**Key Email Phrases:**\n- Opening: *Liebe/Lieber...* (informal) or *Sehr geehrte/geehrter...* (formal)\n- Closing: *Viele Grüße* / *Bis bald* / *Mit freundlichen Grüßen* (formal)",
+            tips: "**telc B1 Writing Strategy:**\n1. **Read carefully** - Identify all 4 Leitpunkte and underline them\n2. **Plan** (3 min) - Quick notes for each point\n3. **Write** (20 min) - Address points in order, use connecting words\n4. **Check** (7 min) - Did you answer ALL 4 points? Verb position? Articles?\n\n**Time Management is KEY:** Practice writing in exactly 30 minutes. Don't spend 60 minutes like in other exams!\n\n**Common Mistakes to Avoid:**\n- Missing one of the 4 points (instant point deduction!)\n- Too short (<100 words) or too long (>180 words)\n- Wrong formality level (use 'du' for friends, 'Sie' for formal)\n- Forgetting greeting/closing"
+          },
+          subtasks: [
+            { description: "Study the 4-Leitpunkte structure above. Understand that you must address ALL 4 points in ONE email.", completed: false },
+            { description: "Practice identifying the 4 Leitpunkte in sample telc B1 writing tasks (use your PDF).", completed: false },
+            { description: "Write your first practice email (informal scenario) in 30 minutes, addressing all 4 points. Check: Did you cover all 4? Is it 120-150 words?", completed: false },
+            { description: "Write a second practice email (semi-formal scenario, e.g., to a company) in 30 minutes. Focus on 'Sie' form and formal phrases.", completed: false },
+            { description: "Review both emails: Check verb position (V2!), articles, and whether all 4 Leitpunkte are clearly addressed.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "telc B1 Writing Examples", url: "https://www.telc.net" },
+            { name: "Journaly German Writing Community", url: "https://www.journaly.com" },
+            { name: "Lang-8 Language Exchange", url: "https://lang-8.com" },
+            { name: "Your telc B1 PDF", url: "file:///telcb1/telc_deutsch_b1_zd_uebungstest_1.pdf" }
+          ],
+          notes: ""
+        }
+      ]
+    },
+    {
+      week: 2,
+      goal: "Present Tense & Restaurant Vocabulary",
+      days: [
+        {
+          day: 1,
+          task: "Present Tense Conjugation (Regular & Irregular)",
+          focus: "grammar",
+          level: "B1",
+          lessonContent: {
+            title: "The Present is Now! Regular vs. Irregular Verbs",
+            definition: "Welcome back! Today we conquer the **Present Tense (Präsens)**. This is how you tell people what you do, what you are doing, or what is generally true. Most verbs are **regular** (e.g., *kaufen*, *machen*) and follow a perfect, reliable pattern. The main trick is memorizing the 'VIP verbs'—**irregular verbs** like *sein*, *haben*, and *werden*—because their stems change!",
+            example: "**Regular Verb Endings (KAUFEN - to buy):**\n\n| Person | Ending | Example |\n|---|---|---|\n| Ich | **-e** | ich kauf**e** |\n| Du | **-st** | du kauf**st** |\n| Er/Sie/Es | **-t** | er kauf**t** |\n| Wir | **-en** | wir kauf**en** |\n| Ihr | **-t** | ihr kauf**t** |\n| Sie/sie | **-en** | sie kauf**en** |\n\n**Irregular VIPs (must memorize!):**\n*Sein* (to be): ich **bin**, du **bist**, er **ist**...\n*Haben* (to have): ich **habe**, du **hast**, er **hat**...",
+            tips: "Create flashcards *specifically* for the **du** and **er/sie/es** forms of irregular verbs. Why? Because that's where the stem usually changes! (e.g., *fahren* -> *du fährst*). Once you master those two forms, the rest is easy."
+          },
+          subtasks: [
+            { description: "Drill 5 regular verbs (e.g., machen, spielen) through all 6 persons.", completed: false },
+            { description: "Memorize the full conjugation of the VIP verbs: *sein* and *haben*.", completed: false },
+            { description: "Write 10 sentences using different subjects and verbs in the present tense, making sure your conjugation matches the subject.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Verb Conjugator", url: "https://www.verbformen.com" },
+            { name: "DeutschLern Verbs", url: "https://deutschlern.net" }
+          ],
+          notes: ""
+        },
+        {
+          day: 2,
+          task: "Restaurant Vocabulary & Phrases",
+          focus: "vocabulary",
+          level: "B1",
+          lessonContent: {
+            title: "Im Restaurant: Ordering and Paying Like a Local",
+            definition: "German dining is formal, so we need polite, full phrases! Today, we are focusing on the words you need to successfully order food, ask for things, and pay the bill. The key difference from English is using the polite conditional forms (*hätte*, *könnte*) to sound respectful.",
+            example: "**Target Phrases & Words for Politeness:**\n\n| English | German (Polite) |\n|---|---|\n| I would like... | **Ich hätte gern...** (Literally: I would have gladly...) |\n| Could you...? | **Könnten Sie...?** (Literally: Could you?) |\n| The bill, please. | **Die Rechnung, bitte.** |\n| We pay separately. | **Wir zahlen getrennt.** |\n| We pay together. | **Wir zahlen zusammen.** |\n\n**Key Nouns & Verbs:**\n1. Die Speisekarte (the menu) - *Feminine*\n2. Das Gericht (the dish) - *Neuter*\n3. Der Kellner (the waiter) - *Masculine*\n4. Bestellen (to order)\n5. Lecker (tasty/delicious)",
+            tips: "Practice full phrases, not just single words. Role-play ordering aloud in front of a mirror, using 'Ich hätte gern' for everything you ask for. Remember to use the Accusative case for the food you order: 'Ich hätte gern **den** Salat (Akk.)' or 'Ich hätte gern **das** Wasser (Akk.).'"
+          },
+          subtasks: [
+            { description: "Learn the 10 target phrases/words listed, focusing on 'Ich hätte gern' and 'Könnten Sie'.", completed: false },
+            { description: "Practice ordering a drink, an appetizer, and a main course using correct Accusative articles.", completed: false },
+            { description: "Practice the 3 different ways to ask for/handle the bill (Rechnung, zahlen, getrennt/zusammen).", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Quizlet: Restaurant Dialogue", url: "https://quizlet.com" },
+            { name: "Anki Flashcards", url: "https://www.ankiweb.net" }
+          ],
+          notes: ""
+        },
+        {
+          day: 3,
+          task: "Listening: Ordering and Interaction",
+          focus: "listening",
+          level: "B1",
+          lessonContent: {
+            title: "Eavesdropping: Following a Restaurant Conversation",
+            definition: "Today's task is to listen to a conversation between a waiter and a customer. Your goal is to be able to follow the flow: what food is ordered, any requests made, and the final payment. This tests your ability to process the rapid-fire exchange of polite phrases and specific vocabulary.",
+            example: "Listen for the modal verbs *möchten* (would like) and *können* (can). These are the signal words for requests and desires. E.g., 'Was **möchten** Sie trinken?' or 'Ich **kann** das leider nicht essen.' Pay extra attention to numbers when they mention prices or portion sizes.",
+            tips: "Try a **prediction exercise**: Before listening, list 5 things a customer might say and 5 things a waiter might say. Then, listen and see how many of your predictions match the actual dialogue. This forces your brain to anticipate the German structure."
+          },
+          subtasks: [
+            { description: "Listen to a 5-minute restaurant dialogue and list all food items and prices mentioned.", completed: false },
+            { description: "Identify and list 3 polite request phrases used by the customer.", completed: false },
+            { description: "Practice shadowing (repeating the audio immediately after it plays) the waiter's lines for 3 minutes.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "YouTube German Dialogues", url: "https://www.youtube.com" },
+            { name: "Deutsche Welle B1", url: "https://www.dw.com" }
+          ],
+          notes: ""
+        },
+        {
+          day: 4,
+          task: "Role-Play: Handling a Restaurant Situation",
+          focus: "speaking",
+          level: "B1",
+          lessonContent: {
+            title: "The Customer is Always Right (or at least polite!)",
+            definition: "It's time to put your vocabulary and grammar to work! We're simulating a full restaurant interaction: ordering, confirming the order, asking for something missing (a napkin or salt), and paying. Focus on maintaining a polite, friendly tone and correctly using the *haben* and *können* conditional forms (*hätten* and *könnten*).",
+            example: "**Key Scenarios to Practice:**\n1. **Ordering:** 'Ich hätte gerne das Rindersteak (Akk.) und ein Bier (Akk.).'\n2. **Minor Complaint:** 'Entschuldigung, mir fehlt das Besteck. Könnten Sie es bitte bringen?'\n3. **Asking for Bill:** 'Könnten Sie uns bitte die Rechnung bringen?'\n4. **Payment:** 'Wir möchten bitte zusammen/getrennt zahlen.'",
+            tips: "Find a language partner or use a voice recorder. Focus specifically on your pronunciation of the 'ch' sound in words like *Ich* and *Küche*—it's a common stumbling block! Try to maintain eye contact (with the mirror or the camera) to build confidence."
+          },
+          subtasks: [
+            { description: "Practice ordering a three-course meal using 'Ich hätte gern...'.", completed: false },
+            { description: "Practice handling a minor issue (e.g., asking for the salt) using 'Könnten Sie...'.", completed: false },
+            { description: "Simulate asking for and paying the bill, practicing 'zusammen' and 'getrennt'.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "ConversationExchange", url: "https://www.conversationexchange.com" },
+            { name: "Speaky", url: "https://www.speaky.com" }
+          ],
+          notes: ""
+        },
+        {
+          day: 5,
+          task: "Writing a Balanced Restaurant Review",
+          focus: "writing",
+          level: "B1",
+          lessonContent: {
+            title: "Schreiben Sie eine Bewertung: Clear and Balanced Critique",
+            definition: "Your final task this week is to write a short, balanced restaurant review (100-120 words). You need to clearly state both positive and negative points using descriptive adjectives. The goal is clarity, conciseness, and, most importantly, correct **verb placement** (the verb is almost always the second element in a main clause!).",
+            example: "**Review Structure & Key Adjectives:**\n1. **Introduction (Name/Location):** Das Restaurant 'Zum Glück' ist in der Stadtmitte.\n2. **Positive Point (Food/Atmosphere):** Das Essen schmeckt wirklich **lecker**. Die Atmosphäre **ist** gemütlich.\n3. **Negative Point (Service/Speed):** **Aber** der Service **war** leider etwas **langsam**.\n4. **Conclusion:** Ich **empfehle** das Gericht trotzdem.\n\n**Connecting Words:** Use *aber* (but), *obwohl* (although), and *trotzdem* (nevertheless) to link your ideas smoothly.",
+            tips: "Count your words and your verbs! Ensure your verb is in the second position in simple sentences. Use a mix of present tense (for facts and opinions) and *Perfekt* (for a specific past event, like waiting for the food)."
+          },
+          subtasks: [
+            { description: "Draft three positive sentences using descriptive adjectives and correct verb placement.", completed: false },
+            { description: "Draft three negative sentences using 'nicht' or 'kein'.", completed: false },
+            { description: "Combine and edit into a final 100-120 word review, focusing on flow and consistent verb placement.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Journaly", url: "https://www.journaly.com" },
+            { name: "Google Docs", url: "https://docs.google.com" }
+          ],
+          notes: ""
+        }
+      ]
+    },
+    {
+      week: 3,
+      goal: "telc Sprachbausteine & Speaking Format",
+      days: [
+        {
+          day: 1,
+          task: "Sprachbausteine Teil 1: Grammar Fill-in (Articles, Cases, Prepositions)",
+          focus: "grammar",
+          level: "B1",
+          lessonContent: {
+            title: "Mastering Sprachbausteine: The telc B1 Secret Weapon!",
+            definition: "**UNIQUE TO telc B1:** The **Sprachbausteine** (Language Elements) section tests your grammar and vocabulary knowledge through fill-in-the-blank exercises. This section does NOT exist in Goethe B1, so we need focused practice!\n\n**Sprachbausteine Teil 1: Grammar (10 Multiple-Choice Questions)**\n\nYou'll see a text with 10 gaps. For each gap, choose the correct option from 4 choices. Tests:\n- **Articles** (der/die/das/den/dem/des)\n- **Cases** (Nominative, Accusative, Dative, Genitive)\n- **Prepositions** (in, an, auf, mit, zu, etc.)\n- **Conjunctions** (weil, dass, obwohl, wenn, als)\n- **Verb forms** (haben/sein, modal verbs)\n\n**Strategy:** Read the whole sentence, identify what's missing (article? preposition? conjunction?), then eliminate wrong answers.",
+            example: "**Example Questions:**\n\n1. *Ich gehe heute ____ Park.*\n   a) in den ✓ (Accusative - movement INTO)\n   b) im\n   c) in die\n   d) ins\n\n2. *Er hat ____ Buch gelesen.*\n   a) ein\n   b) einen\n   c) das ✓ (specific book, Accusative)\n   d) der\n\n3. *Ich komme nicht zur Party, ____ ich krank bin.*\n   a) dass\n   b) wenn\n   c) weil ✓ (because)\n   d) obwohl\n\n**Key Patterns to Memorize:**\n- **Prepositions + Accusative** (movement): in, an, auf, über, unter, neben, vor, hinter, zwischen\n- **Prepositions + Dative** (location): in, an, auf, bei, mit, nach, zu, von, aus\n- **Always Accusative:** durch, für, gegen, ohne, um\n- **Always Dative:** aus, bei, mit, nach, seit, von, zu",
+            tips: "**telc Sprachbausteine Tips:**\n1. **Read FIRST, then look at gaps** - Get context before choosing\n2. **Identify the grammar point** - Is it asking for case? Preposition? Conjunction?\n3. **Use elimination** - Cross out obviously wrong answers\n4. **Time management** - ~15-20 minutes for Sprachbausteine Teil 1 & 2\n5. **Trust your gut** - First instinct is often correct!\n\n**Common Traps:**\n- Mixing up 'weil' vs 'dass' (both are conjunctions but different meanings)\n- Confusing movement (Accusative) vs. location (Dative) with two-way prepositions"
+          },
+          subtasks: [
+            { description: "Review the preposition + case rules above. Make flashcards for 'Always Accusative' and 'Always Dative' prepositions.", completed: false },
+            { description: "Practice 20 Sprachbausteine Teil 1 questions (use online resources or your telc PDF).", completed: false },
+            { description: "Identify your weak spots: Are you struggling with cases? Prepositions? Conjunctions? Focus extra practice there.", completed: false },
+            { description: "Do 10 more practice questions, timing yourself (aim for 10 questions in 10-12 minutes).", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "telc B1 Sprachbausteine Practice", url: "https://www.telc.net" },
+            { name: "DeutschLern Grammar Exercises", url: "https://deutschlern.net" },
+            { name: "Schubert Verlag - Online Exercises", url: "https://www.schubert-verlag.de" },
+            { name: "Your telc B1 PDF", url: "file:///telcb1/telc_deutsch_b1_zd_uebungstest_1.pdf" }
+          ],
+          notes: ""
+        },
+        {
+          day: 2,
+          task: "Sprachbausteine Teil 2: Vocabulary in Context (Collocations & Fixed Phrases)",
+          focus: "vocabulary",
+          level: "B1",
+          lessonContent: {
+            title: "Vocabulary Precision: Choosing the RIGHT Word",
+            definition: "**Sprachbausteine Teil 2: Vocabulary (10 Matching Questions)**
+
+You'll see a text with 10 gaps and 15 answer options. You must match the correct word to each gap. Tests:
+- **Collocations** (words that go together: 'eine Entscheidung treffen', 'Angst haben')
+- **Synonyms** (similar words with different contexts)
+- **Fixed phrases** (idiomatic expressions)
+- **Context-appropriate vocabulary**
+
+**Challenge:** You have MORE options than gaps (15 options for 10 gaps), so 5 are distractors!
+
+**Strategy:** Read the whole text first, understand the main topic, then fill in the EASIEST gaps first (the ones you're 100% sure about). This helps narrow down the remaining options.",
+            example: "**Example Task (Simplified):**
+
+*Text about planning a trip:*
+
+*Ich möchte im Sommer nach Italien (1)____. Zuerst muss ich eine (2)____ buchen und dann das Hotel (3)____. Ich freue mich sehr (4)____ die Reise!*
+
+**Options:** reisen | fahren | fliegen | Karte | Reise | Fahrkarte | reservieren | bestellen | kaufen | auf | über | für | an | zu | mit
+
+**Answers:**
+1. **fahren/reisen** (both work, but 'fahren' is more common for Italy)
+2. **Fahrkarte** (train ticket)
+3. **reservieren** (reserve a hotel)
+4. **auf** (freuen + auf + Accusative = look forward to)
+
+**Common Collocations for B1:**
+- **eine Entscheidung treffen** (make a decision)
+- **Angst haben vor** (be afraid of)
+- **sich freuen auf/über** (look forward to / be happy about)
+- **denken an** (think of)
+- **warten auf** (wait for)
+- **sich interessieren für** (be interested in)",
+            tips: "**Sprachbausteine Teil 2 Strategy:**
+1. **Read ENTIRE text first** - Understand topic and tone
+2. **Fill EASY ones first** - Do the ones you're 100% sure about
+3. **Cross out used words** - Keep track of remaining options
+4. **Check collocations** - Does this verb need a specific preposition?
+5. **Context clues** - Formal or informal? Present or past?
+
+**Common Mistakes:**
+- Not reading the full text (missing context)
+- Forgetting to cross out used words
+- Confusing similar words (reisen vs. fahren, Reise vs. Fahrt)
+- Ignoring preposition requirements (verb + preposition combos)"
+          },
+          subtasks: [
+            { description: "Learn the 6 common collocations listed above. Create sentences using each one.", completed: false },
+            { description: "Practice 2 complete Sprachbausteine Teil 2 exercises (10 gaps each). Time yourself: 8-10 minutes per exercise.", completed: false },
+            { description: "Review your mistakes. Make a list of collocations and verb+preposition combinations you got wrong.", completed: false },
+            { description: "Create flashcards for 20 common B1 collocations and verb+preposition pairs.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "telc B1 Practice Materials", url: "https://www.telc.net" },
+            { name: "Collocations Dictionary", url: "https://www.dwds.de" },
+            { name: "German Verbs with Prepositions List", url: "https://deutschlern.net" },
+            { name: "Anki Flashcards", url: "https://www.ankiweb.net" }
+          ],
+          notes: ""
+        },
+        {
+          day: 3,
+          task: "More Writing Practice: Semi-formal Email (4 Leitpunkte)",
+          focus: "writing",
+          level: "B1",
+          lessonContent: {
+            title: "Semi-formal Emails: Professional but Friendly",
+            definition: "Today we focus on **semi-formal emails** - these are common in the telc B1 exam! Semi-formal means you use **'Sie'** (formal 'you') but keep a friendly, helpful tone. Common scenarios:
+- Writing to apartment manager/landlord
+- Inquiring about a course or service
+- Complaint to a company (polite!)
+- Requesting information from an organization
+
+**Key Differences from Informal:**
+- Use **Sie** instead of **du**
+- More formal greeting: **Sehr geehrte Damen und Herren** or **Sehr geehrter Herr/Frau [Name]**
+- More formal closing: **Mit freundlichen Grüßen**
+- More polite language: **Ich würde gern...** / **Könnten Sie bitte...**",
+            example: "**Example Task (Semi-formal):**
+
+*You signed up for a German course but received wrong information. Write an email to the course organizer:*
+1. Explain the problem
+2. Ask for correct information
+3. Request a solution
+4. Suggest a time to discuss
+
+**Sample Response:**
+
+*Sehr geehrte Damen und Herren,*
+
+*ich habe mich vor einer Woche für den Deutschkurs B1 angemeldet. [Point 1] Leider habe ich falsche Informationen über die Kurszeiten erhalten. In Ihrer E-Mail steht, dass der Kurs montags beginnt, aber auf Ihrer Website steht 'dienstags'.*
+
+*[Point 2] Könnten Sie mir bitte die korrekten Kurszeiten mitteilen? Wann genau beginnt der Kurs, und wie lange dauert jede Unterrichtsstunde?*
+
+*[Point 3] Ich würde gern wissen, ob ich meinen Kursplatz behalten kann oder ob ich mich erneut anmelden muss. Ich hoffe, dass wir dieses Problem schnell lösen können.*
+
+*[Point 4] Ich könnte am Donnerstag oder Freitag zwischen 14:00 und 17:00 Uhr telefonieren, um die Details zu besprechen. Wäre das möglich?*
+
+*Mit freundlichen Grüßen,*
+*[Your name]*
+
+**(145 words)**",
+            tips: "**Semi-formal Email Tips:**
+1. **Sie + Verb Agreement:** Remember 'Sie' takes the same verb form as 'sie' (they): *Sie haben* (not *Sie habt*)
+2. **Polite Requests:** Use conditional: *Könnten Sie...?* / *Würden Sie...?* / *Ich würde gern...*
+3. **Problem → Solution:** State the problem clearly, then suggest solutions
+4. **Formal Phrases:**
+   - *Vielen Dank im Voraus* (Thanks in advance)
+   - *Ich freue mich auf Ihre Antwort* (I look forward to your response)
+   - *Mit freundlichen Grüßen* (With kind regards)
+
+**Time Management (30 min total):**
+- 3 min: Read task, underline 4 Leitpunkte
+- 5 min: Plan response (notes for each point)
+- 18 min: Write email
+- 4 min: Check all 4 points addressed, verb position, Sie/du consistency"
+          },
+          subtasks: [
+            { description: "Study the semi-formal email structure above. Note the formal greeting, Sie-form, and polite phrases.", completed: false },
+            { description: "Practice: Write a semi-formal email to a language school asking about course details (use 4 sample Leitpunkte). 30 minutes!", completed: false },
+            { description: "Practice: Write a semi-formal email to an apartment manager about a repair issue. 30 minutes!", completed: false },
+            { description: "Self-check: Did you address ALL 4 points? Did you use 'Sie' consistently? Is it 120-150 words? Correct verb position?", completed: false },
+            { description: "Review both emails and circle any errors. Focus on: articles, verb position (V2!), and 'Sie' verb forms.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "telc B1 Writing Examples", url: "https://www.telc.net" },
+            { name: "Journaly Writing Community", url: "https://www.journaly.com" },
+            { name: "German Email Phrases Guide", url: "https://www.germanveryeasy.com" }
+          ],
+          notes: ""
+        },
+        {
+          day: 4,
+          task: "telc B1 Listening: Richtig/Falsch Questions + Note-Taking",
+          focus: "listening",
+          level: "B1",
+          lessonContent: {
+            title: "Hörverstehen: True/False Mastery",
+            definition: "The telc B1 listening section has **3 parts with Richtig/Falsch (True/False) questions**. Total: 20 questions, ~30 minutes.
+
+**Teil 1: Global Understanding (5 R/F questions)**
+- Short conversations or announcements
+- Focus: Main idea, general situation
+- Strategy: Don't worry about every word, just the main message
+
+**Teil 2: Detail Understanding (10 R/F questions)**
+- Longer conversation or interview
+- Focus: Specific details, opinions, reasons
+- Strategy: Read questions BEFORE listening, note keywords
+
+**Teil 3: Selective Understanding (5 R/F questions)**
+- Short statements or messages
+- Focus: Specific information (times, prices, locations)
+- Strategy: Quick answers, listen for key facts",
+            example: "**Example Teil 1 (Global):**
+*[Audio: Woman calls restaurant to make reservation for Saturday evening]*
+
+**Question:** Die Frau möchte am Samstag im Restaurant essen. 
+**Answer:** **Richtig** ✓ (She wants to eat Saturday evening)
+
+---
+
+**Example Teil 2 (Detail):**
+*[Audio: Man explains why he chose his job]*
+
+**Question:** Der Mann hat den Job gewählt, weil er gutes Geld verdienen möchte.
+**Answer:** **Falsch** ✗ (If he says he chose it for interesting work, not money)
+
+---
+
+**Key Listening Strategies:**
+1. **Before Listening:** Read ALL questions first, underline keywords
+2. **During Listening:** Focus on keywords from questions
+3. **Mark immediately:** Don't wait, mark R or F as you hear it
+4. **Second listening:** Confirm or change answers
+5. **Guess if unsure:** No penalty for wrong answers in telc!",
+            tips: "**telc Listening Tips:**
+
+**Common Traps:**
+- **Synonyms:** Question uses different word than audio (e.g., audio says 'Auto', question says 'Wagen')
+- **Negation:** 'nicht' or 'kein' changes meaning completely!
+- **Partial truth:** Statement might be partially true but main point is false
+
+**Preparation Strategy:**
+- Listen to German daily (podcasts, YouTube, news)
+- Practice with telc sample tests (your PDF!)
+- Focus on question words: Wann? Warum? Wo? Wie lange?
+- Train your ear for numbers, times, days of week
+
+**During Exam:**
+- Stay calm if you miss one - move to next question
+- Use second listening to CONFIRM (not completely redo)
+- Write answers on answer sheet clearly"
+          },
+          subtasks: [
+            { description: "Complete the listening section from your telc B1 PDF. First, read ALL questions before starting audio.", completed: false },
+            { description: "Check your answers. For wrong answers, listen again and identify WHY you got it wrong (missed keyword? misunderstood negation?).", completed: false },
+            { description: "Practice selective listening: Listen to a German podcast and write down 5 key facts (names, numbers, places).", completed: false },
+            { description: "Create a 'listening vocabulary' list: Write down 20 words you find hard to understand by ear (e.g., 'dreizehn' vs 'dreißig').", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Your telc B1 PDF + Audio", url: "file:///telcb1/telc_deutsch_b1_zd_uebungstest_1.pdf" },
+            { name: "Deutsche Welle - Langsam gesprochene Nachrichten", url: "https://www.dw.com" },
+            { name: "Easy German Podcast", url: "https://www.easygerman.org" },
+            { name: "telc Practice Materials", url: "https://www.telc.net" }
+          ],
+          notes: ""
+        },
+        {
+          day: 5,
+          task: "telc B1 Speaking: Mündliche Prüfung Format (Teil 1, 2, 3)",
+          focus: "speaking",
+          level: "B1",
+          lessonContent: {
+            title: "Mündlicher Ausdruck: The telc B1 Speaking Test",
+            definition: "The telc B1 oral exam is **15-16 minutes** (after 20 minutes preparation) with a partner. Three parts:
+
+**Vorbereitung (Preparation): 20 minutes**
+- You and partner prepare separately
+- You each get different topic cards for Teil 2
+- Same task card for Teil 3 (planning task)
+- Can make notes (but can't bring dictionary!)
+
+**Teil 1: Sich vorstellen / Kontakt aufnehmen (1-2 min)**
+- Brief introduction to each other
+- Goal: Break the ice, establish contact
+- Questions: Name, where from, job, hobbies, family
+- *Less formal than Goethe - more like meeting someone new!*
+
+**Teil 2: Über ein Thema sprechen / Gespräch über ein Thema (5-6 min)**
+- You each present your prepared topic (different cards)
+- Partner listens and asks follow-up questions
+- Then switch roles
+- Topics: daily life, hobbies, travel, work, technology, environment
+
+**Teil 3: Gemeinsam etwas planen (6-7 min)**
+- Collaborative task: Plan something together
+- Both see same card with 5-6 Leitpunkte
+- Must negotiate, agree, make decisions
+- Examples: Plan a party, organize a trip, prepare an event",
+            example: "**Teil 1 Example:**
+*Candidate A:* Hallo, ich bin Sarah. Wie heißt du?
+*Candidate B:* Hallo Sarah, ich heiße Thomas. Woher kommst du?
+*A:* Ich komme aus Polen, aber ich wohne jetzt in Berlin. Und du?
+*B:* Ich bin aus der Türkei. Was machst du beruflich?
+
+---
+
+**Teil 2 Example (Your topic card: 'Reisen'):**
+*Sie präsentieren:*
+- Warum reisen Sie gern?
+- Wohin sind Sie letztes Jahr gereist?
+- Was war Ihr schönstes Reiseerlebnis?
+
+*Your presentation (2-3 min):*
+'Ich reise sehr gern, weil ich neue Kulturen kennenlernen möchte. Letztes Jahr bin ich nach Italien gefahren. Wir haben Rom und Venedig besucht. Mein schönstes Erlebnis war...'
+
+*Partner asks:* 'Wie lange warst du in Italien?' / 'Was möchtest du als nächstes besuchen?'
+
+---
+
+**Teil 3 Example (Plan eine Abschiedsparty für einen Kollegen):**
+
+**Leitpunkte auf der Karte:**
+- Ort und Zeit
+- Essen und Getränke
+- Aktivitäten
+- Geschenk
+- Gäste
+
+*Dialogue:*
+*A:* Also, wir müssen eine Party für Michael planen. Wann sollen wir die Party machen?
+*B:* Ich denke, Freitag wäre gut. Was meinst du?
+*A:* Ja, Freitag ist gut. Und wo?
+*B:* Vielleicht im Büro oder in einem Restaurant?
+*A:* Im Restaurant ist zu teuer. Ich schlage vor, wir machen es im Büro.
+*B:* Einverstanden! Was können wir essen?...",
+            tips: "**telc Speaking Success Strategies:**
+
+**Teil 1 (Introduction):**
+- Be natural and friendly!
+- Ask partner questions too (dialogue, not monologue)
+- Show interest: 'Ach ja?', 'Interessant!', 'Das ist toll!'
+
+**Teil 2 (Topic Presentation):**
+- Use your 20-min prep time wisely: make notes, not full sentences
+- Speak 2-3 minutes on your topic
+- Structure: Introduction → Points → Conclusion
+- When partner presents: Listen actively, prepare 2-3 questions
+- Answer questions naturally (don't panic if you don't know - say 'Das weiß ich nicht genau, aber...')
+
+**Teil 3 (Planning Together):**
+- THIS IS COLLABORATIVE - not a debate!
+- Address ALL Leitpunkte from card
+- Make suggestions: 'Ich schlage vor...' / 'Wie wäre es mit...' / 'Was hältst du davon...?'
+- Agree/disagree politely: 'Gute Idee!' / 'Das finde ich auch.' / 'Hm, ich bin nicht sicher...'
+- Reach decisions: 'Also, wir haben entschieden...' / 'Sind wir einverstanden?'
+- If stuck, ask partner: 'Was denkst du?' / 'Hast du eine Idee?'
+
+**General Tips:**
+- Speak clearly, not too fast
+- Make eye contact with partner AND examiner
+- Don't stress about small errors - fluency > perfection
+- Use connectors: 'also', 'aber', 'und', 'deshalb', 'außerdem'
+- If you don't understand, ask: 'Kannst du das wiederholen?'"
+          },
+          subtasks: [
+            { description: "Study the telc speaking format above. Understand the 3 parts and what's expected in each.", completed: false },
+            { description: "Teil 1 Practice: Record yourself doing a 1-minute self-introduction. Include name, origin, job, hobbies.", completed: false },
+            { description: "Teil 2 Practice: Choose a topic (travel, hobbies, work). Prepare notes and speak for 2-3 minutes. Record yourself.", completed: false },
+            { description: "Teil 3 Practice: Find the collaborative planning task in your telc PDF. Role-play with a partner or alone (both roles). Address all Leitpunkte!", completed: false },
+            { description: "Listen to your recordings. Check: Did you speak clearly? Use connectors? Address all points? Make notes on what to improve.", completed: false }
+          ],
+          completed: false,
+          resources: [
+            { name: "Your telc B1 PDF (Mündliche Prüfung section)", url: "file:///telcb1/telc_deutsch_b1_zd_uebungstest_1.pdf" },
+            { name: "iTalki - Find Speaking Partner", url: "https://www.italki.com" },
+            { name: "Tandem App - Language Exchange", url: "https://www.tandem.net" },
+            { name: "telc Speaking Tips", url: "https://www.telc.net" },
+            { name: "YouTube: telc B1 Mündliche Prüfung Examples", url: "https://www.youtube.com" }
+          ],
+          notes: ""
+        }
+      ]
+    }
+  ]
+};
+
+export const vocabularyData = [
+  { word: "Nominativ", translation: "nominative case", focus: "grammar", week: 1 },
+  { word: "Akkusativ", translation: "accusative case", focus: "grammar", week: 1 },
+  { word: "Der Tisch", translation: "the table", focus: "vocabulary", week: 1 },
+  { word: "Die Familie", translation: "the family", focus: "vocabulary", week: 1 },
+  { word: "Arbeiten", translation: "to work", focus: "vocabulary", week: 1 },
+  { word: "Das Restaurant", translation: "the restaurant", focus: "vocabulary", week: 2 },
+  { word: "Die Speisekarte", translation: "the menu", focus: "vocabulary", week: 2 },
+  { word: "Das Gericht", translation: "the dish", focus: "vocabulary", week: 2 },
+  { word: "Bestellen", translation: "to order", focus: "vocabulary", week: 2 },
+  { word: "Zahlen", translation: "to pay", focus: "vocabulary", week: 2 },
+  { word: "Der Kellner", translation: "the waiter", focus: "vocabulary", week: 2 },
+  { word: "Lecker", translation: "tasty/delicious", focus: "vocabulary", week: 2 },
+  { word: "Sprachbausteine", translation: "language elements (grammar section)", focus: "grammar", week: 3 },
+  { word: "Leitpunkte", translation: "guiding points", focus: "vocabulary", week: 3 },
+  { word: "sich freuen auf", translation: "to look forward to", focus: "vocabulary", week: 3 },
+  { word: "eine Entscheidung treffen", translation: "to make a decision", focus: "vocabulary", week: 3 },
+  { word: "warten auf", translation: "to wait for", focus: "vocabulary", week: 3 },
+  { word: "denken an", translation: "to think of", focus: "vocabulary", week: 3 }
+];
+
+export const quotes = [
+  { german: "Jede kleine Anstrengung ist ein Sieg!", english: "Every small effort is a victory!" },
+  { german: "Du schaffst das!", english: "You can do it!" },
+  { german: "Heute besser als gestern!", english: "Better today than yesterday!" },
+  { german: "Fehler sind deine Freunde!", english: "Mistakes are your friends!" },
+  { german: "Konstanz ist der Schlüssel!", english: "Consistency is the key!" },
+  { german: "Übung macht den Meister!", english: "Practice makes perfect!" },
+  { german: "Bleib dran!", english: "Keep at it!" }
+];
+
+export const quotes = [
+  { german: "Jede kleine Anstrengung ist ein Sieg!", english: "Every small effort is a victory!" },
+  { german: "Du schaffst das!", english: "You can do it!" },
+  { german: "Heute besser als gestern!", english: "Better today than yesterday!" },
+  { german: "Fehler sind deine Freunde!", english: "Mistakes are your friends!" },
+  { german: "Konstanz ist der Schlüssel!", english: "Consistency is the key!" }
+];
