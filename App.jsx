@@ -1517,7 +1517,7 @@ const goetheB1CompleteData = {
                 <Award className="w-6 h-6 md:w-8 md:h-8" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-xl md:text-3xl font-bold leading-tight break-words">Goethe-Zertifikat B1 Exam</h3>
+                <h3 className="text-xl md:text-3xl font-bold leading-tight break-words">telc B1 Exam</h3>
                 <p className="text-xs md:text-sm opacity-90">Official German Language Certification</p>
               </div>
             </div>
